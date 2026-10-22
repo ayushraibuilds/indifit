@@ -13,6 +13,9 @@ import '../../core/nutrition_thali.dart';
 import '../../core/typed_quantities.dart';
 import '../catalog/catalogue_quantity_resolver.dart';
 import '../database/app_database.dart' as database;
+import '../services/food_search_pipeline.dart';
+import '../services/nutrition_food_search_ranking.dart';
+import 'food_repository.dart';
 import 'nutrition_constraint_repository.dart';
 import 'nutrition_consumption_repository.dart';
 import 'nutrition_food_catalog_repository.dart';
@@ -42,6 +45,8 @@ class NutritionThaliRepository {
   final DateTime Function() _nowUtc;
   final NutritionThaliFailureInjector? _failureInjector;
   final CatalogueQuantityResolver _catalogueQuantities;
+  final NutritionFoodCatalogRepository _catalog;
+  final FoodSearchPipeline _searchPipeline;
 
   NutritionThaliRepository({
     required database.AppDatabase db,
@@ -54,6 +59,7 @@ class NutritionThaliRepository {
     Uuid? uuid,
     DateTime Function()? nowUtc,
     NutritionThaliFailureInjector? failureInjector,
+    FoodSearchPipeline? searchPipeline,
   }) : _db = db,
        _registry = registry,
        _recipes = recipes,
@@ -64,8 +70,22 @@ class NutritionThaliRepository {
        _uuid = uuid ?? const Uuid(),
        _nowUtc = nowUtc ?? (() => DateTime.now().toUtc()),
        _failureInjector = failureInjector,
-       _catalogueQuantities = CatalogueQuantityResolver(db);
+       _catalogueQuantities = CatalogueQuantityResolver(db),
+       _catalog = NutritionFoodCatalogRepository(db: db, registry: registry),
+       _searchPipeline =
+           searchPipeline ??
+           FoodSearchPipeline(
+             FoodRepository(db),
+             optionFor: NutritionFoodCatalogRepository(
+               db: db,
+               registry: registry,
+             ).getOption,
+           );
 
+  /// Food search's own pipeline and ranking (N14-11, U-5): typo-tolerant
+  /// catalogue matches, "3 roti" searching roti, one word dropped when the
+  /// whole search finds nothing, and one row per dish. Only foods with
+  /// nutrition are offered, and regional foods without facts stay hidden.
   Future<List<NutritionThaliFoodOption>> searchFoods({
     String query = '',
     int limit = 50,
@@ -76,62 +96,85 @@ class NutritionThaliRepository {
         'A food search limit must be positive.',
       );
     }
-    final normalized = query.trim().toLowerCase();
-    final activeRows = await (_db.select(
-      _db.nutritionFoods,
-    )..where((row) => row.lifecycle.equals('active'))).get();
-    final regionalWithFacts = {
-      for (final fact
-          in await (_db.select(_db.nutritionFoodNutrientFacts)..where(
-                (fact) =>
-                    fact.foodId.like('food-regional-%') &
-                    fact.isCurrent.equals(true) &
-                    (fact.amount.isNotNull() |
-                        fact.lower.isNotNull() |
-                        fact.upper.isNotNull()),
+    if (query.trim().isEmpty) return const [];
+    final pipeline = _searchPipeline;
+    final resolved = await pipeline.resolve(query);
+    final words = resolved.query;
+    if (words.isEmpty) return const [];
+    final ranked = NutritionFoodSearchRanking.rank(
+      query: words,
+      candidates: [
+        ...await pipeline.candidates(words),
+        for (final option in await _ownFoods(words))
+          NutritionFoodSearchCandidate.canonical(option),
+      ],
+      limit: limit,
+      oneRowPerDish: true,
+    );
+    final orderedIds = <String>[];
+    for (final result in ranked) {
+      final candidate = result.candidate;
+      final id =
+          candidate.option?.id ??
+          candidate.canonicalIdentityId ??
+          (candidate.food == null
+              ? null
+              : (await _catalog.ensureLegacyFood(candidate.food!)).id);
+      if (id != null && !orderedIds.contains(id)) orderedIds.add(id);
+    }
+    if (orderedIds.isEmpty) return const [];
+    final rows = {
+      for (final row
+          in await (_db.select(_db.nutritionFoods)..where(
+                (row) =>
+                    row.id.isIn(orderedIds) & row.lifecycle.equals('active'),
               ))
               .get())
-        fact.foodId,
+        row.id: row,
     };
-    final allRows = [
-      for (final row in activeRows)
-        if (!NutritionFoodCatalogRepository.isRegionalWithoutFacts(
-          row.id,
-          regionalWithFacts.contains(row.id),
-        ))
-          row,
-    ];
-    final matchingIds = <String>{};
-    if (normalized.isNotEmpty) {
-      matchingIds.addAll(
-        allRows
-            .where((row) => row.displayName.toLowerCase().contains(normalized))
-            .map((row) => row.id),
-      );
-      final aliases =
-          await (_db.select(_db.nutritionFoodAliases)..where(
-                (row) =>
-                    row.isActive.equals(true) &
-                    row.normalizedAlias.lower().contains(normalized),
-              ))
-              .get();
-      matchingIds.addAll(aliases.map((row) => row.foodId).whereType<String>());
+    final offered = <database.NutritionFood>[];
+    for (final id in orderedIds) {
+      final row = rows[id];
+      if (row == null) continue;
+      // getOption hides regional foods without facts; the rest need numbers.
+      final option = await _catalog.getOption(id);
+      if (option == null || !option.hasNumericFacts) continue;
+      offered.add(row);
     }
-    final rows =
-        allRows
-            .where((row) => normalized.isEmpty || matchingIds.contains(row.id))
-            .toList()
-          ..sort((left, right) {
-            final byName = left.displayName.compareTo(right.displayName);
-            return byName == 0 ? left.id.compareTo(right.id) : byName;
-          });
-    final limitedRows = rows.take(limit).toList(growable: false);
     final measures = await _catalogueQuantities.measuresFor(
-      limitedRows.map((row) => row.id),
+      offered.map((row) => row.id),
     );
     return List.unmodifiable([
-      for (final row in limitedRows) _foodOption(row, measures[row.id]),
+      for (final row in offered) _foodOption(row, measures[row.id]),
     ]);
+  }
+
+  /// Active foods outside the catalogue index (the user's own, saved online
+  /// and imported foods) whose name matches [words], filtered in SQL.
+  Future<List<NutritionFoodOption>> _ownFoods(String words) async {
+    final terms = NutritionFoodSearchVocabulary.expand(words)
+        .map((term) => term.trim().toLowerCase())
+        .where((term) => term.isNotEmpty)
+        .toSet();
+    if (terms.isEmpty) return const [];
+    final rows =
+        await (_db.select(_db.nutritionFoods)
+              ..where((row) {
+                Expression<bool> matches = const Constant(false);
+                for (final term in terms) {
+                  matches = matches | row.displayName.lower().contains(term);
+                }
+                return row.lifecycle.equals('active') &
+                    row.sourceType.isIn(const [
+                      'bundled_asset',
+                      'regional_asset',
+                      'ai',
+                    ]).not() &
+                    matches;
+              })
+              ..limit(100))
+            .get();
+    return [for (final row in rows) ?await _catalog.getOption(row.id)];
   }
 
   /// The active food whose source reference is [sourceRef] (presets name

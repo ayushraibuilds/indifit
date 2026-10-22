@@ -363,14 +363,14 @@ class FoodDiaryMealRow extends StatelessWidget {
     final preview = isLoading
         ? 'Loading logged food'
         : records.isEmpty
-        ? (onCopyYesterday != null
-              ? 'Nothing logged yet · Tap history to copy yesterday'
-              : 'Nothing logged yet')
+        // Today's empty-meal copy; the copy-yesterday button names itself.
+        ? 'Nothing yet'
         : '${records.length} logged';
+    final energy = foodDiaryEnergyLabel(records);
     return Semantics(
       container: true,
       button: true,
-      label: '$label. ${foodDiaryEnergyLabel(records)}. $preview',
+      label: [label, if (energy.isNotEmpty) energy, preview].join('. '),
       hint: 'Open $label details or use the add button.',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -402,7 +402,7 @@ class FoodDiaryMealRow extends StatelessWidget {
                           child: Text(
                             preview,
                             key: ValueKey(preview),
-                            maxLines: 1,
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: B05Typography.caption(context),
                           ),
@@ -411,7 +411,7 @@ class FoodDiaryMealRow extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    foodDiaryEnergyLabel(records),
+                    energy,
                     style: B05Typography.caption(context).copyWith(
                       color: context.b05Colors.textPrimary,
                       fontWeight: FontWeight.w700,
@@ -544,7 +544,9 @@ String foodDiaryMealTitle(String value) {
 
 String foodDiaryEnergyLabel(Iterable<NutritionHistoricalReadRecord> records) {
   final facts = [for (final record in records) record.totals.facts['energy']];
-  if (facts.isEmpty || facts.any((fact) => fact == null || !fact.isAvailable)) {
+  // Blank, not "—", like Today: a dash beside the add button reads as minus.
+  if (facts.isEmpty) return '';
+  if (facts.any((fact) => fact == null || !fact.isAvailable)) {
     return '— kcal';
   }
   final available = facts.cast<NutrientFact>();

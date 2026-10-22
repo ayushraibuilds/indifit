@@ -14,6 +14,7 @@ import '../core/utils/app_logger.dart';
 import '../data/catalog/catalog_update_service.dart';
 import '../data/database/app_database.dart';
 import '../features/food_log/usual_meal.dart';
+import '../features/nutrition/jain_constraint_sync.dart';
 import '../features/rating/rating_prompt.dart';
 import '../features/settings/food_database_providers.dart';
 import 'database_readiness.dart';
@@ -77,6 +78,14 @@ class _IndiFitAppState extends ConsumerState<IndiFitApp>
     unawaited(
       RestPresenceService.cleanupStaleNotifications().catchError((e) {
         AppLogger.warning('Rest presence startup cleanup failed: $e');
+      }),
+    );
+    // People who chose Jain before UX-16 get its dietary need once.
+    unawaited(
+      ref.read(jainConstraintSyncProvider).migrateExistingUser().catchError((
+        e,
+      ) {
+        AppLogger.warning('Jain dietary need migration failed: $e');
       }),
     );
     unawaited(
@@ -201,6 +210,17 @@ class _IndiFitAppState extends ConsumerState<IndiFitApp>
       _checkFoodDatabaseUpdates();
       // Rest notification actions taken in the background are applied by the
       // player screen, which owns the live workout (on resume and on open).
+    } else if (state == AppLifecycleState.paused && _bootstrapped) {
+      // Phones keep the app alive for days, so the cold-start backup alone
+      // goes stale (R-06). Throttled and skipped when nothing changed.
+      unawaited(
+        AutoBackupService(
+          ref.read(databaseProvider),
+        ).runBackgroundBackup().catchError((e) {
+          AppLogger.warning('Background auto-backup failed: $e');
+          return null;
+        }),
+      );
     }
   }
 

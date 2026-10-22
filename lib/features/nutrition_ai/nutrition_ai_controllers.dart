@@ -444,7 +444,7 @@ class NutritionLabelOcrController
 ///
 /// Items are logged one by one, so a failure part-way used to leave the first
 /// items in the diary while the screen offered to try again, which logged
-/// them a second time (and created their custom foods twice). Now every item
+/// them a second time (and created their estimate foods twice). Now every item
 /// keeps one command id and one created food while it is unchanged, so a
 /// retried item replays its earlier log instead of adding another, and items
 /// that did log are taken off the review list. Editing an item makes a new
@@ -489,7 +489,8 @@ class AiMealLogSession {
           option = item.matchedCatalogOption!;
           quantity = catalogLogQuantity(item);
         } else {
-          option = _createdFoods[item] ??= await catalog.createUserFood(
+          // A one-off estimate, not a saved food (C-08).
+          option = _createdFoods[item] ??= await catalog.createAiEstimateFood(
             displayName: item.foodName,
             servingSize: item.quantityAmount > 0 ? item.quantityAmount : 1.0,
             servingUnit: item.quantityUnit,

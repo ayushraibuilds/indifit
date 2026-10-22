@@ -230,6 +230,10 @@ class _LoggedFoodRowLayoutState extends State<LoggedFoodRowLayout> {
 
 /// [LoggedFoodRowLayout] for a logged record, or one item of it. [onActions]
 /// is the record-actions entry point (UR-11, UR-51) behind "…".
+/// Whether [item]'s numbers came from an AI estimate, not a catalogue food.
+bool isAiEstimateItem(NutritionHistoricalReadItem item) =>
+    item.facts['energy']?.source == NutrientSourceType.aiEstimate;
+
 class LoggedFoodRow extends ConsumerWidget {
   const LoggedFoodRow({
     super.key,
@@ -265,12 +269,20 @@ class LoggedFoodRow extends ConsumerWidget {
     final incomplete = single != null
         ? single.facts['energy']?.isAvailable != true
         : record.completeness.state != NutrientCompletenessState.complete;
+    // Estimates must never look like catalogue facts (U-4).
+    final estimate = single != null
+        ? isAiEstimateItem(single)
+        : items.isNotEmpty && items.every(isAiEstimateItem);
+    final note = [
+      if (estimate) 'Estimate',
+      if (incomplete) ConsumerCopy.nutritionDetailsIncomplete,
+    ].join(' · ');
     return LoggedFoodRowLayout(
       mealType: record.mealCategory,
       name: name,
       amount: amount,
       kcal: kcal,
-      note: incomplete ? ConsumerCopy.nutritionDetailsIncomplete : null,
+      note: note.isEmpty ? null : note,
       onTap: onActions,
       parts: [
         if (composite)

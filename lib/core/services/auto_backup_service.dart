@@ -13,9 +13,15 @@ import '../utils/app_logger.dart';
 import 'auto_backup_secret_store.dart';
 import 'platform_storage_protection.dart';
 
+/// What one auto-backup run did.
+enum AutoBackupOutcome { created, unchanged, failed }
+
 class AutoBackupService {
   static const String _lastContentFingerprintKey =
       AppPreferenceKeys.autoBackupLastContentFingerprintV2;
+
+  /// The shortest gap between two backups on going to the background.
+  static const backgroundInterval = Duration(minutes: 30);
 
   final AppDatabase _db;
   final AutoBackupSecretStore _secretStore;
@@ -39,7 +45,31 @@ class AutoBackupService {
     await AutoBackupService(db, prefs: prefs).runAutoBackup();
   }
 
-  Future<void> runAutoBackup() async {
+  /// Backs up when the app goes to the background (R-06): at most once
+  /// every [backgroundInterval], and skipped when nothing changed. Phones keep
+  /// apps alive for days, so a cold-start backup alone goes stale.
+  Future<AutoBackupOutcome?> runBackgroundBackup({DateTime? now}) async {
+    final prefs = _prefs ?? await SharedPreferences.getInstance();
+    final at = now ?? DateTime.now();
+    final last = prefs.getInt(AppPreferenceKeys.autoBackupLastBackgroundAt);
+    if (last != null &&
+        at.difference(DateTime.fromMillisecondsSinceEpoch(last)) <
+            backgroundInterval) {
+      return null;
+    }
+    final outcome = await runAutoBackup();
+    if (outcome != AutoBackupOutcome.failed) {
+      await prefs.setInt(
+        AppPreferenceKeys.autoBackupLastBackgroundAt,
+        at.millisecondsSinceEpoch,
+      );
+    }
+    return outcome;
+  }
+
+  /// Writes a new encrypted copy unless the data is unchanged, keeping three
+  /// rolling copies. Never throws: a failure is logged and returned.
+  Future<AutoBackupOutcome> runAutoBackup() async {
     try {
       final docDir = await _documentsDirectoryProvider();
       final backupDir = Directory('${docDir.path}/backups');
@@ -71,7 +101,7 @@ class AutoBackupService {
           'Auto-backup skipped because local data is unchanged',
           'AutoBackupService',
         );
-        return;
+        return AutoBackupOutcome.unchanged;
       }
 
       final deviceSecret = await _secretStore.readOrCreate();
@@ -93,6 +123,7 @@ class AutoBackupService {
         'Encrypted auto-backup snapshot created successfully',
         'AutoBackupService',
       );
+      return AutoBackupOutcome.created;
     } catch (error, stackTrace) {
       AppLogger.error(
         'Auto-backup snapshot failed',
@@ -100,6 +131,7 @@ class AutoBackupService {
         stackTrace,
         'AutoBackupService',
       );
+      return AutoBackupOutcome.failed;
     }
   }
 

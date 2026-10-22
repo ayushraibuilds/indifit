@@ -17,6 +17,9 @@ import '../services/food_name_spelling.dart';
 /// entry and recipe authoring go through this boundary.  The option carries
 /// the quantity context that its nutrient facts expect, so callers never need
 /// to guess whether a value is per-serving, per-100-gram, or per-100-mL.
+/// `source_type` of foods that only hold an AI estimate (C-08).
+const aiEstimateSourceType = 'ai';
+
 class NutritionFoodOption {
   final String id;
   final String displayName;
@@ -49,6 +52,10 @@ class NutritionFoodOption {
     this.measure,
     this.variantOfFoodId,
   });
+
+  /// A one-off AI estimate, never offered again in search, recents or
+  /// My Foods.
+  bool get isAiEstimate => sourceType == aiEstimateSourceType;
 
   NutritionFoodOption withMeasure(CatalogueFoodMeasure? measure) =>
       NutritionFoodOption(
@@ -256,6 +263,61 @@ class NutritionFoodCatalogRepository {
     double? cholesterolMg,
     double? transFatG,
     String? barcode,
+  }) => _createOwnedFood(
+    displayName: displayName,
+    servingSize: servingSize,
+    servingUnit: servingUnit,
+    values: {
+      'energy': energyKcal,
+      'protein': proteinG,
+      'carbohydrate': carbohydrateG,
+      'fat': fatG,
+      'fibre': fibreG,
+      'sodium': sodiumMg,
+      'added_sugar': addedSugarG,
+      'saturated_fat': saturatedFatG,
+      'cholesterol': cholesterolMg,
+    },
+    transFatG: transFatG,
+    barcode: barcode,
+    aiEstimate: false,
+  );
+
+  /// Records an AI-estimated item that matched no catalogue food (C-08).
+  ///
+  /// Logging needs a food, but this is a one-off estimate, not a food the
+  /// user entered: it is tagged `aiEstimate` (kind) and `ai` (source), its
+  /// facts carry [NutrientSourceType.aiEstimate], and it stays out of search,
+  /// recents and My Foods (see [isAiEstimate]).
+  Future<NutritionFoodOption> createAiEstimateFood({
+    required String displayName,
+    required double servingSize,
+    required String servingUnit,
+    required double? energyKcal,
+    required double? proteinG,
+    required double? carbohydrateG,
+    required double? fatG,
+  }) => _createOwnedFood(
+    displayName: displayName,
+    servingSize: servingSize,
+    servingUnit: servingUnit,
+    values: {
+      'energy': energyKcal,
+      'protein': proteinG,
+      'carbohydrate': carbohydrateG,
+      'fat': fatG,
+    },
+    aiEstimate: true,
+  );
+
+  Future<NutritionFoodOption> _createOwnedFood({
+    required String displayName,
+    required double servingSize,
+    required String servingUnit,
+    required Map<String, double?> values,
+    required bool aiEstimate,
+    double? transFatG,
+    String? barcode,
   }) async {
     final name = displayName.trim();
     final unit = servingUnit.trim();
@@ -277,9 +339,17 @@ class NutritionFoodCatalogRepository {
         'A custom food needs a positive serving size and unit.',
       );
     }
-    final id = 'user-food::${const Uuid().v4()}';
+    final id = aiEstimate
+        ? 'ai-estimate-food::${const Uuid().v4()}'
+        : 'user-food::${const Uuid().v4()}';
+    final factSource = aiEstimate
+        ? NutrientSourceType.aiEstimate
+        : NutrientSourceType.userEntered;
+    final factVersion = aiEstimate ? 'ai-estimate-v1' : 'custom-food-v1';
+    final sourceType = aiEstimate ? aiEstimateSourceType : 'user';
     final sourceReference =
-        'user-custom-food::$id|serving=${_numberLabel(servingSize)} $unit'
+        '${aiEstimate ? 'ai-estimate' : 'user-custom-food'}::$id'
+        '|serving=${_numberLabel(servingSize)} $unit'
         '${storedBarcode == null ? '' : '|barcode=$storedBarcode'}'
         '${transFatG == null ? '' : '|trans_fat=${_numberLabel(transFatG)}g'}';
     final servingDefinition = ServingDefinitionReference(
@@ -291,17 +361,6 @@ class NutritionFoodCatalogRepository {
       NutrientBasisKind.perServing,
       servingDefinition: servingDefinition,
     );
-    final values = <String, double?>{
-      'energy': energyKcal,
-      'protein': proteinG,
-      'carbohydrate': carbohydrateG,
-      'fat': fatG,
-      'fibre': fibreG,
-      'sodium': sodiumMg,
-      'added_sugar': addedSugarG,
-      'saturated_fat': saturatedFatG,
-      'cholesterol': cholesterolMg,
-    };
     final facts = <String, NutrientFact>{};
     for (final definition in _registry.definitions) {
       final value = values[definition.id];
@@ -310,18 +369,18 @@ class NutritionFoodCatalogRepository {
           nutrientId: definition.id,
           unit: definition.unit,
           basis: basis,
-          source: NutrientSourceType.userEntered,
+          source: factSource,
           sourceReference: sourceReference,
-          factVersion: 'custom-food-v1',
+          factVersion: factVersion,
         );
       } else if (value == 0) {
         facts[definition.id] = NutrientFact.knownZero(
           nutrientId: definition.id,
           unit: definition.unit,
           basis: basis,
-          source: NutrientSourceType.userEntered,
+          source: factSource,
           sourceReference: sourceReference,
-          factVersion: 'custom-food-v1',
+          factVersion: factVersion,
         );
       } else {
         facts[definition.id] = NutrientFact.known(
@@ -331,19 +390,19 @@ class NutritionFoodCatalogRepository {
             unit: definition.unit,
           ),
           basis: basis,
-          source: NutrientSourceType.userEntered,
+          source: factSource,
           sourceReference: sourceReference,
-          factVersion: 'custom-food-v1',
+          factVersion: factVersion,
         );
       }
     }
     await _ensureIdentity(
       id: id,
       displayName: name,
-      kind: 'userCreated',
-      sourceType: 'user',
+      kind: aiEstimate ? 'aiEstimate' : 'userCreated',
+      sourceType: sourceType,
       sourceReference: sourceReference,
-      sourceVersion: 'custom-food-v1',
+      sourceVersion: factVersion,
     );
     await _ensureFacts(
       foodId: id,
@@ -360,7 +419,7 @@ class NutritionFoodCatalogRepository {
         source: 'user',
       ),
       facts: currentFacts,
-      sourceType: 'user',
+      sourceType: sourceType,
       sourceReference: sourceReference,
       preparationId: null,
       brand: null,
@@ -462,6 +521,7 @@ class NutritionFoodCatalogRepository {
               ..where(
                 (table) =>
                     table.lifecycle.equals('active') &
+                    table.sourceType.equals(aiEstimateSourceType).not() &
                     (normalized.isEmpty
                         ? const Constant(true)
                         : table.displayName.lower().contains(normalized)),

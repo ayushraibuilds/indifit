@@ -123,6 +123,9 @@ abstract final class AppPreferenceKeys {
 
   // --- Food & Diary ---
   static const prefDiaryMealSlots = 'pref_diary_meal_slots';
+  // Choosing Jain turned on the Jain dietary need once (UX-16); never again,
+  // so a need the user turned off stays off.
+  static const prefJainConstraintApplied = 'pref_jain_constraint_applied';
   // My chai (UF-2): milk type, how much of the cup is milk, sugar, cup size.
   static const prefMyChaiMilk = 'pref_my_chai_milk';
   static const prefMyChaiMilkShare = 'pref_my_chai_milk_share';
@@ -165,6 +168,9 @@ abstract final class AppPreferenceKeys {
   // --- Auto Backup ---
   static const autoBackupLastContentFingerprintV2 =
       'auto_backup_last_content_fingerprint_v2';
+  // When the app last backed up on going to the background (R-06), in ms
+  // since epoch. Device-local: not in backups.
+  static const autoBackupLastBackgroundAt = 'auto_backup_last_background_at';
 
   // --- Resumable Onboarding Draft Keys (17 keys) ---
   static const onboardingDraftPage = 'onboarding_draft_page';

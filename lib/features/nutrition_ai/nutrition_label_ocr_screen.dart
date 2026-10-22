@@ -9,6 +9,7 @@ import '../../core/privacy/dpdp_consent_service.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../nutrition/nutrition_providers.dart';
+import 'ai_result_report.dart';
 import 'nutrition_ai_controllers.dart';
 import 'nutrition_label_ocr_service.dart';
 
@@ -578,6 +579,18 @@ class _NutritionLabelOcrScreenState
           icon: Icons.camera_alt_outlined,
           emphasis: B05ActionEmphasis.secondary,
           onPressed: () => _pickWithConsent(controller, ImageSource.camera),
+        ),
+        const SizedBox(height: B05Layout.space12),
+        AiResultReportRow(
+          feature: 'Nutrition label',
+          items: [
+            (
+              name: state.productName.trim().isEmpty
+                  ? 'Packaged food'
+                  : state.productName.trim(),
+              matchedName: null,
+            ),
+          ],
         ),
       ],
     );

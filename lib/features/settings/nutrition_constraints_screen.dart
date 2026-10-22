@@ -10,6 +10,7 @@ import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/consumer_task_primitives.dart';
 import '../../core/widgets/responsive_form_primitives.dart';
 import '../../data/repositories/nutrition_constraint_repository.dart';
+import '../nutrition/jain_constraint_sync.dart';
 import 'nutrition_constraints_controller.dart';
 
 class NutritionConstraintsScreen extends ConsumerStatefulWidget {
@@ -210,15 +211,17 @@ class _DietPatternCard extends ConsumerWidget {
             decoration: const InputDecoration(labelText: 'Pattern'),
             onChanged: (value) async {
               if (value == null) return;
+              final diet = DietPreferencePresentation.persistedValueFor(
+                originalValue: profile.dietPreference,
+                uiValue: value,
+                userChanged: true,
+              );
               await ref
                   .read(userProfileProvider.notifier)
-                  .updateDietPreference(
-                    DietPreferencePresentation.persistedValueFor(
-                      originalValue: profile.dietPreference,
-                      uiValue: value,
-                      userChanged: true,
-                    ),
-                  );
+                  .updateDietPreference(diet);
+              // Choosing Jain turns on its need once (UX-16).
+              await ref.read(jainConstraintSyncProvider).applyFor(diet);
+              ref.invalidate(nutritionConstraintManagementControllerProvider);
             },
           ),
         ],

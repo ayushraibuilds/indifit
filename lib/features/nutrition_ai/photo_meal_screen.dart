@@ -15,6 +15,7 @@ import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../data/repositories/nutrition_food_catalog_repository.dart';
 import 'ai_items_thali_handoff.dart';
+import 'ai_result_report.dart';
 import 'meal_item_resolver.dart';
 import 'natural_language_meal_service.dart';
 import 'nutrition_ai_controllers.dart';
@@ -486,6 +487,16 @@ class _PhotoMealScreenState extends ConsumerState<PhotoMealScreen> {
               style: B05Typography.caption(context),
             ),
           ),
+        AiResultReportRow(
+          feature: 'Photo meal',
+          items: [
+            for (final item in state.editableItems)
+              (
+                name: item.foodName,
+                matchedName: item.matchedCatalogOption?.displayName,
+              ),
+          ],
+        ),
 
         const SizedBox(height: B05Layout.space20),
 
@@ -623,6 +634,12 @@ class _PhotoMealScreenState extends ConsumerState<PhotoMealScreen> {
                       const SizedBox(height: 2),
                       Text(
                         'from photo: "${item.rawSegment}"',
+                        style: B05Typography.caption(context),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        aiItemSourceLabel(item),
+                        key: ValueKey('ai_item_source_$index'),
                         style: B05Typography.caption(context),
                       ),
                       if (item.portionNote != null) ...[
