@@ -11,9 +11,13 @@ import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/data/models/adaptive_tdee_models.dart';
 import 'package:indifit/data/models/b02_execution_models.dart';
+import 'package:indifit/data/models/progress_dashboard_models.dart';
 import 'package:indifit/data/repositories/workout_repository.dart';
+import 'package:indifit/features/dashboard/check_in_reminder.dart';
 import 'package:indifit/features/dashboard/weigh_in_reminder.dart';
+import 'package:indifit/features/dashboard/widgets/today_check_in_card.dart';
 import 'package:indifit/features/dashboard/widgets/today_weigh_in_chip.dart';
+import 'package:indifit/features/progress/progress_screen.dart';
 import 'package:indifit/features/progress/training_bests.dart';
 import 'package:indifit/features/progress/weekly_check_in.dart';
 import 'package:indifit/features/progress/weekly_check_in_screen.dart';
@@ -362,6 +366,187 @@ void main() {
       expect(find.text('No protein logged this week'), findsOneWidget);
       expect(find.byKey(const Key('weekly_check_in_share')), findsOneWidget);
     });
+  });
+
+  group('check-in entry points (R-5)', () {
+    // Sun 18 Oct 2026 and the days around it, on the device clock.
+    DateTime at(int day, int hour, [int minute = 0]) =>
+        DateTime(2026, 10, day, hour, minute);
+    final ist = LocalTimezoneService(read: () async => 'Asia/Kolkata');
+
+    test('the Today card shows Sunday 12:00 to Monday 12:00', () {
+      expect(CheckInReminder.titleAt(at(17, 13)), isNull); // Saturday
+      expect(CheckInReminder.titleAt(at(18, 11, 59)), isNull);
+      expect(CheckInReminder.titleAt(at(18, 12)), "This week's check-in");
+      expect(CheckInReminder.titleAt(at(18, 23, 59)), "This week's check-in");
+      expect(CheckInReminder.titleAt(at(19, 0)), "Last week's check-in");
+      expect(CheckInReminder.titleAt(at(19, 11, 59)), "Last week's check-in");
+      expect(CheckInReminder.titleAt(at(19, 12)), isNull);
+      expect(CheckInReminder.titleAt(at(20, 9)), isNull); // Tuesday
+    });
+
+    test('Sunday and the Monday after are one check-in week', () async {
+      final sunday = await checkInWeekStart(at(18, 13), ist);
+      expect(sunday, '2026-10-12');
+      expect(await checkInWeekStart(at(19, 9), ist), sunday);
+      expect(await checkInWeekStart(at(25, 13), ist), '2026-10-19');
+    });
+
+    test('"Not now" hides it for that week only', () {
+      String? title(DateTime now) => CheckInReminder.title(
+        localNow: now,
+        weekStart: now.day < 25 ? '2026-10-12' : '2026-10-19',
+        dismissedWeek: '2026-10-12',
+      );
+      expect(title(at(18, 13)), isNull);
+      expect(title(at(19, 9)), isNull);
+      expect(title(at(25, 13)), "This week's check-in");
+    });
+
+    test('the dismissed week round-trips through a backup', () async {
+      final db = AppDatabase.memory();
+      addTearDown(db.close);
+      final prefs = await SharedPreferences.getInstance();
+      await CheckInReminder.dismissFor(prefs, '2026-10-12');
+      final restored = BackupData.fromJson(
+        (await BackupData.createFromDatabase(db, prefs)).toJson(),
+      );
+      SharedPreferences.setMockInitialValues({});
+      final fresh = await SharedPreferences.getInstance();
+      await restored.restoreToDatabase(db, fresh);
+      expect(
+        fresh.getString(AppPreferenceKeys.prefCheckInDismissedWeek),
+        '2026-10-12',
+      );
+    });
+
+    final checkIn = WeeklyCheckIn.build(
+      const WeeklyCheckInInputs(
+        weekStart: '2026-10-12',
+        weekEnd: '2026-10-18',
+        workoutLocalDates: ['2026-10-13'],
+        goal: 3,
+      ),
+    );
+
+    Future<void> settle(WidgetTester tester) async {
+      for (var i = 0; i < 4; i++) {
+        await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+        await tester.pump();
+      }
+    }
+
+    Future<SharedPreferences> pumpToday(
+      WidgetTester tester,
+      DateTime now, {
+      SharedPreferences? prefs,
+    }) async {
+      prefs ??= (await tester.runAsync(SharedPreferences.getInstance))!;
+      await tester.pumpWidget(
+        ProviderScope(
+          key: UniqueKey(),
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            localTimezoneServiceProvider.overrideWithValue(ist),
+            weighInClockProvider.overrideWithValue(() => now),
+            weeklyCheckInProvider.overrideWith((ref) async => checkIn),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: const Scaffold(body: TodayCheckInCard()),
+          ),
+        ),
+      );
+      await settle(tester);
+      return prefs;
+    }
+
+    testWidgets('Today: opens the check-in on Sunday afternoon', (
+      tester,
+    ) async {
+      await pumpToday(tester, at(18, 15));
+      expect(find.text("This week's check-in"), findsOneWidget);
+      await tester.tap(find.byKey(const Key('today_check_in_open')));
+      await tester.pumpAndSettle();
+      expect(find.byType(WeeklyCheckInScreen), findsOneWidget);
+      expect(find.text('12–18 Oct'), findsOneWidget);
+    });
+
+    testWidgets('Today: "Not now" on Sunday hides it on Monday too', (
+      tester,
+    ) async {
+      final prefs = await pumpToday(tester, at(18, 15));
+      await tester.tap(find.byKey(const Key('today_check_in_not_now')));
+      await settle(tester);
+      expect(find.byKey(const Key('today_check_in')), findsNothing);
+      await pumpToday(tester, at(19, 9), prefs: prefs);
+      expect(find.byKey(const Key('today_check_in')), findsNothing);
+      await pumpToday(tester, at(25, 15), prefs: prefs);
+      expect(find.text("This week's check-in"), findsOneWidget);
+    });
+
+    testWidgets('Today: Monday morning says last week, then goes', (
+      tester,
+    ) async {
+      await pumpToday(tester, at(19, 9));
+      expect(find.text("Last week's check-in"), findsOneWidget);
+      await pumpToday(tester, at(19, 13));
+      expect(find.byKey(const Key('today_check_in')), findsNothing);
+    });
+
+    for (final withData in [false, true]) {
+      testWidgets(
+        'Progress: the check-in row shows ${withData ? 'with' : 'without'} data',
+        (tester) async {
+          tester.view.physicalSize = const Size(390, 2400);
+          tester.view.devicePixelRatio = 1;
+          addTearDown(tester.view.reset);
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                weeklyCheckInProvider.overrideWith((ref) async => checkIn),
+              ],
+              child: MaterialApp(
+                theme: AppTheme.lightTheme,
+                home: Scaffold(
+                  body: ProgressScreen(
+                    preview: ProgressDashboardSnapshot(
+                      nowUtc: DateTime.utc(2026, 10, 20, 6),
+                      timezoneId: 'Asia/Kolkata',
+                      todayLocalDate: '2026-10-20',
+                      measurements: const [],
+                      workouts: [
+                        if (withData)
+                          ProgressWorkoutRecord(
+                            id: 1,
+                            name: 'Workout 1',
+                            completedAtUtc: DateTime.utc(2026, 10, 19, 6),
+                            localDate: '2026-10-19',
+                            activityType: 'strength',
+                            totalVolumeKg: 3000,
+                            volumeIsTrustworthy: true,
+                          ),
+                      ],
+                      weeklyTrainedDates: {if (withData) '2026-10-19'},
+                      strengthSets: const [],
+                      muscleBalance: null,
+                      unavailableSections: const {},
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+          final row = find.byKey(const Key('progress_check_in_row'));
+          expect(row, findsOneWidget);
+          expect(find.text("This week's check-in"), findsOneWidget);
+          await tester.tap(row);
+          await tester.pumpAndSettle();
+          expect(find.byType(WeeklyCheckInScreen), findsOneWidget);
+        },
+      );
+    }
   });
 
   test('the weekly progress reminder opens the check-in', () {

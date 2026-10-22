@@ -14,6 +14,7 @@ import 'package:indifit/data/models/b04_goal_models.dart';
 import 'package:indifit/data/repositories/calendar_read_repository.dart';
 import 'package:indifit/data/repositories/dashboard_personalization_repository.dart';
 import 'package:indifit/data/repositories/nutrition_goal_repository.dart';
+import 'package:indifit/features/dashboard/check_in_reminder.dart';
 import 'package:indifit/features/dashboard/dashboard_module_registry.dart';
 import 'package:indifit/features/dashboard/dashboard_personalization_controller.dart';
 import 'package:indifit/features/dashboard/today_consumer_presentation.dart';
@@ -292,6 +293,7 @@ void main() {
         usualThaliProvider.overrideWith((ref) async => null),
         usualMealProvider.overrideWith((ref, slot) async => null),
         weighInChipVisibleProvider.overrideWith((ref) async => false),
+        checkInCardTitleProvider.overrideWith((ref) async => null),
         // The "+1 roti" chips would read the real diary.
         canonicalFoodRecordsForDayProvider.overrideWith(
           (ref, day) async => const [],
@@ -542,6 +544,7 @@ Widget _todayApp({
       usualThaliProvider.overrideWith((ref) async => null),
       usualMealProvider.overrideWith((ref, slot) async => null),
       weighInChipVisibleProvider.overrideWith((ref) async => false),
+      checkInCardTitleProvider.overrideWith((ref) async => null),
       // The "+1 roti" chips would read the real diary.
       canonicalFoodRecordsForDayProvider.overrideWith(
         (ref, day) async => const [],

@@ -138,6 +138,10 @@ abstract final class AppPreferenceKeys {
   static const prefProteinNudgeDismissedDate =
       'pref_protein_nudge_dismissed_date';
 
+  // The check-in card on Today (R-5): the Monday of the check-in week whose
+  // card "Not now" hid.
+  static const prefCheckInDismissedWeek = 'pref_check_in_dismissed_week';
+
   // --- Food database updates (device-local; CAT-7) ---
   static const catalogUpdateAllowMobileData =
       'catalog_update_allow_mobile_data';

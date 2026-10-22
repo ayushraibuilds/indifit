@@ -24,6 +24,7 @@ import 'achievements_screen.dart';
 import 'period_comparison/widgets/period_comparison_section.dart';
 import 'progress_dashboard_controller.dart';
 import 'progress_dashboard_models.dart';
+import 'weekly_check_in_screen.dart';
 import 'widgets/adaptive_tdee_card.dart';
 import 'widgets/progress_formatters.dart';
 import 'widgets/progress_measurement_widgets.dart';
@@ -153,7 +154,18 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   units: units,
                 ),
                 const SizedBox(height: B05Layout.space16),
-                _buildMilestonesCard(context),
+                _buildCheckInRow(context),
+                const SizedBox(height: B05Layout.space12),
+                _buildLinkCard(
+                  context,
+                  key: const Key('progress_milestones_card'),
+                  icon: Icons.emoji_events_rounded,
+                  title: 'Badges',
+                  detail:
+                      'Track your personal records, streaks, and unlocked badges.',
+                  open: () => const AchievementsScreen(),
+                  semanticsLabel: 'Badges. View your unlocked badges.',
+                ),
                 if (snapshot.unavailableSections.isNotEmpty) ...[
                   const SizedBox(height: B05Layout.space12),
                   ConsumerStatusRow(
@@ -280,56 +292,73 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         padding: const EdgeInsets.all(B05Layout.space24),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 440),
-          child: Semantics(
-            container: true,
-            label:
-                'Your progress starts here. Complete a workout or log a weigh-in to start seeing useful trends.',
-            child: B05Surface(
-              tone: B05SurfaceTone.inset,
-              padding: const EdgeInsets.all(B05Layout.space24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.auto_graph_rounded,
-                    color: context.b05Colors.action,
-                    size: 32,
-                  ),
-                  const SizedBox(height: B05Layout.space16),
-                  Text(
-                    'Your progress starts here',
-                    style: B05Typography.title(context),
-                  ),
-                  const SizedBox(height: B05Layout.space4),
-                  Text(
-                    'Complete a workout or log a weigh-in to start seeing useful trends.',
-                    style: B05Typography.body(context),
-                  ),
-                  const SizedBox(height: B05Layout.space20),
-                  B05ActionGroup(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Semantics(
+                container: true,
+                label:
+                    'Your progress starts here. Complete a workout or log a weigh-in to start seeing useful trends.',
+                child: B05Surface(
+                  tone: B05SurfaceTone.inset,
+                  padding: const EdgeInsets.all(B05Layout.space24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      B05ActionButton(
-                        label: 'Log weight',
-                        icon: Icons.scale_rounded,
-                        onPressed: () => _logWeight(snapshot),
+                      Icon(
+                        Icons.auto_graph_rounded,
+                        color: context.b05Colors.action,
+                        size: 32,
                       ),
-                      B05ActionButton(
-                        label: 'Start workout',
-                        icon: Icons.fitness_center_rounded,
-                        emphasis: B05ActionEmphasis.secondary,
-                        onPressed: _startWorkout,
+                      const SizedBox(height: B05Layout.space16),
+                      Text(
+                        'Your progress starts here',
+                        style: B05Typography.title(context),
+                      ),
+                      const SizedBox(height: B05Layout.space4),
+                      Text(
+                        'Complete a workout or log a weigh-in to start seeing useful trends.',
+                        style: B05Typography.body(context),
+                      ),
+                      const SizedBox(height: B05Layout.space20),
+                      B05ActionGroup(
+                        children: [
+                          B05ActionButton(
+                            label: 'Log weight',
+                            icon: Icons.scale_rounded,
+                            onPressed: () => _logWeight(snapshot),
+                          ),
+                          B05ActionButton(
+                            label: 'Start workout',
+                            icon: Icons.fitness_center_rounded,
+                            emphasis: B05ActionEmphasis.secondary,
+                            onPressed: _startWorkout,
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
+                ),
               ),
-            ),
+              const SizedBox(height: B05Layout.space16),
+              _buildCheckInRow(context),
+            ],
           ),
         ),
       ),
     );
   }
+
+  /// "This week's check-in" (R-5): always on Progress, data or not.
+  Widget _buildCheckInRow(BuildContext context) => _buildLinkCard(
+    context,
+    key: const Key('progress_check_in_row'),
+    icon: Icons.event_note_rounded,
+    title: "This week's check-in",
+    detail: 'Workouts, protein and weight, Mon–Sun.',
+    open: () => const WeeklyCheckInScreen(),
+  );
 
   Widget _failureState() {
     return Center(
@@ -427,20 +456,29 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     });
   }
 
-  Widget _buildMilestonesCard(BuildContext context) {
+  /// A row that opens another screen: the check-in (R-5) and Badges.
+  Widget _buildLinkCard(
+    BuildContext context, {
+    required Key key,
+    required IconData icon,
+    required String title,
+    required String detail,
+    required Widget Function() open,
+    String? semanticsLabel,
+  }) {
     final colors = context.b05Colors;
     return Semantics(
       container: true,
       button: true,
-      label: 'Badges. View your unlocked badges.',
+      label: semanticsLabel ?? '$title. $detail',
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          key: const Key('progress_milestones_card'),
+          key: key,
           borderRadius: b05Radius(B05SurfaceRadius.large),
           onTap: () => Navigator.of(
             context,
-          ).push(MaterialPageRoute(builder: (_) => const AchievementsScreen())),
+          ).push(MaterialPageRoute(builder: (_) => open())),
           child: B05Surface(
             padding: const EdgeInsets.all(B05Layout.space16),
             child: Row(
@@ -451,23 +489,16 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                     color: colors.action.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
-                    Icons.emoji_events_rounded,
-                    color: colors.action,
-                    size: 24,
-                  ),
+                  child: Icon(icon, color: colors.action, size: 24),
                 ),
                 const SizedBox(width: B05Layout.space12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Badges', style: B05Typography.title(context)),
+                      Text(title, style: B05Typography.title(context)),
                       const SizedBox(height: 2),
-                      Text(
-                        'Track your personal records, streaks, and unlocked badges.',
-                        style: B05Typography.caption(context),
-                      ),
+                      Text(detail, style: B05Typography.caption(context)),
                     ],
                   ),
                 ),
