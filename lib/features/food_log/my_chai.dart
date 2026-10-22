@@ -34,8 +34,10 @@ enum MyChaiMilk {
 }
 
 /// How much of the cup is milk; the rest is tea water, which the catalogue
-/// counts as nothing (food-usda-0100 does the same).
+/// counts as nothing (food-usda-0100 does the same). [none] is black tea:
+/// its facts are just the sugar (R-10).
 enum MyChaiMilkShare {
+  none('none', 'No milk (black tea)', 0, 1),
   third('third', '⅓ milk', 1, 3),
   half('half', '½ milk', 1, 2),
   all('all', 'All milk', 1, 1);
@@ -88,8 +90,17 @@ class MyChaiSettings {
 
   double get sugarGrams => sugarTeaspoons * kSugarGramsPerTeaspoon;
 
+  /// Black tea: nothing from an animal, so it fits a vegan diet.
+  bool get hasMilk => milkShare != MyChaiMilkShare.none;
+
   /// "75 ml toned milk + 1 tsp sugar (4.2 g), topped up with tea to 150 ml".
   String get recipeLine {
+    if (!hasMilk) {
+      final sugar = sugarTeaspoons == 0
+          ? 'no sugar'
+          : '${_number(sugarTeaspoons)} tsp sugar (${_number(sugarGrams)} g)';
+      return 'Black tea, $cupMillilitres ml, $sugar';
+    }
     final milkPart =
         '${_number(milkMillilitres)} ml ${milk.label.toLowerCase()} milk';
     final sugarPart = sugarTeaspoons == 0
@@ -127,6 +138,7 @@ class MyChaiSettings {
       return null;
     }
     if (sugar < 0 || cup <= 0) return null;
+    if (share == MyChaiMilkShare.none && sugar == 0) return null;
     return MyChaiSettings(
       milk: milk,
       milkShare: share,
@@ -179,15 +191,17 @@ class MyChaiRecipe {
   String _id(String kind) => '$kMyChaiRecipePrefix$kind::${const Uuid().v4()}';
 
   List<NutritionRecipeIngredientInput> _ingredients(MyChaiSettings chai) => [
-    NutritionRecipeIngredientInput.directFood(
-      id: _id('milk'),
-      foodId: chai.milk.foodId,
-      quantity: Quantity.fromNum(
-        amount: chai.milkMillilitres,
-        unit: QuantityUnit.millilitre,
+    if (chai.hasMilk)
+      NutritionRecipeIngredientInput.directFood(
+        id: _id('milk'),
+        foodId: chai.milk.foodId,
+        quantity: Quantity.fromNum(
+          amount: chai.milkMillilitres,
+          unit: QuantityUnit.millilitre,
+        ),
+        position: 0,
       ),
-      position: 0,
-    ),
+    // Black tea always has sugar: My chai setup doesn't offer none.
     if (chai.sugarTeaspoons > 0)
       NutritionRecipeIngredientInput.directFood(
         id: _id('sugar'),
@@ -196,7 +210,7 @@ class MyChaiRecipe {
           amount: chai.sugarGrams,
           unit: QuantityUnit.gram,
         ),
-        position: 1,
+        position: chai.hasMilk ? 1 : 0,
       ),
   ];
 
@@ -306,6 +320,25 @@ final myChaiSettingsProvider = Provider<MyChaiSettings?>((ref) {
     () => ref.watch(sharedPreferencesProvider),
   );
   return prefs == null ? null : MyChaiSettings.read(prefs);
+});
+
+/// Whether "+ Chai" fits [diet] (R-10): a vegan isn't offered a milky cup,
+/// only black tea.
+bool myChaiFitsDiet(MyChaiSettings chai, String? diet) =>
+    !chai.hasMilk || diet?.trim().toLowerCase() != 'vegan';
+
+/// The My chai that "+ Chai" logs on Today and in search: the saved chai
+/// when it fits the person's diet, else null.
+final offeredMyChaiProvider = Provider<MyChaiSettings?>((ref) {
+  final chai = ref.watch(myChaiSettingsProvider);
+  if (chai == null) return null;
+  String? diet;
+  try {
+    diet = ref.watch(userProfileProvider).dietPreference;
+  } catch (_) {
+    // Safe: without a profile the diet is unknown and the chai is offered.
+  }
+  return myChaiFitsDiet(chai, diet) ? chai : null;
 });
 
 final myChaiRecipeProvider = FutureProvider<MyChaiRecipe>(

@@ -104,6 +104,35 @@ void main() {
       expect(plain.recipeLine, contains('no sugar'));
     });
 
+    test('black tea is just the sugar (R-10)', () async {
+      const black = MyChaiSettings(
+        milk: MyChaiMilk.toned,
+        milkShare: MyChaiMilkShare.none,
+        sugarTeaspoons: 1,
+        cupMillilitres: 150,
+      );
+      expect(black.milkMillilitres, 0);
+      expect(black.hasMilk, isFalse);
+      expect(black.recipeLine, 'Black tea, 150 ml, 1 tsp sugar (4.2 g)');
+      final facts = (await chai.preview(
+        kLocalNutritionUserScopeId,
+        black,
+      )).calculation.facts;
+      expect(fact(facts, 'energy'), closeTo(4.2 * 3.87, 0.01));
+      expect(fact(facts, 'protein'), closeTo(0, 0.001));
+    });
+
+    test('black tea without sugar is not a saved chai', () async {
+      final prefs = await SharedPreferences.getInstance();
+      await const MyChaiSettings(
+        milk: MyChaiMilk.toned,
+        milkShare: MyChaiMilkShare.none,
+        sugarTeaspoons: 0,
+        cupMillilitres: 150,
+      ).write(prefs);
+      expect(MyChaiSettings.read(prefs), isNull);
+    });
+
     test('a logged cup is one item whose facts include the sugar', () async {
       const toned = MyChaiSettings(
         milk: MyChaiMilk.toned,

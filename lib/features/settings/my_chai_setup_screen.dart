@@ -126,23 +126,35 @@ class _MyChaiSetupScreenState extends ConsumerState<MyChaiSetupScreen> {
             'one cup, sugar included.',
             style: B05Typography.body(context),
           ),
-          _choices(
-            'Milk',
-            MyChaiMilk.values,
-            _chai.milk,
-            (milk) => milk.label,
-            (milk) => _chai = _chai.copyWith(milk: milk),
-          ),
+          if (_chai.hasMilk)
+            _choices(
+              'Milk',
+              MyChaiMilk.values,
+              _chai.milk,
+              (milk) => milk.label,
+              (milk) => _chai = _chai.copyWith(milk: milk),
+            ),
           _choices(
             'How much of the cup is milk',
             MyChaiMilkShare.values,
             _chai.milkShare,
             (share) => share.label,
-            (share) => _chai = _chai.copyWith(milkShare: share),
+            // Black tea needs its sugar: with neither there's nothing to log
+            // (a recipe can't be empty), so it starts at half a teaspoon.
+            (share) => _chai = _chai.copyWith(
+              milkShare: share,
+              sugarTeaspoons:
+                  share == MyChaiMilkShare.none && _chai.sugarTeaspoons == 0
+                  ? 0.5
+                  : null,
+            ),
           ),
           _choices(
             'Sugar',
-            kMyChaiSugarChoices,
+            [
+              for (final tsp in kMyChaiSugarChoices)
+                if (_chai.hasMilk || tsp > 0) tsp,
+            ],
             _chai.sugarTeaspoons,
             tsp,
             (value) => _chai = _chai.copyWith(sugarTeaspoons: value),

@@ -17,6 +17,7 @@ import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/typed_quantities.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../core/widgets/indi_fit_feedback.dart';
+import '../../../data/catalog/katori_size.dart';
 import '../../../data/repositories/nutrition_food_catalog_repository.dart';
 import '../../../data/repositories/nutrition_food_logging_coordinator.dart';
 import '../../../data/services/food_dish_group_loader.dart';
@@ -230,6 +231,72 @@ class FoodPortionBottomSheet extends ConsumerStatefulWidget {
         option.baseQuantity.unit.toString().split('.').last,
     isStuffedParatha: isStuffedParathaName(option.displayName),
   );
+
+  /// [options] at the person's own sizes (R-11): the katori chip follows My
+  /// katori (a 200 ml katori holds 200/150 of the standard katori's grams)
+  /// and the glass chip holds My glass. Other chips are unchanged.
+  static List<ServingOption> calibratedServingOptions(
+    List<ServingOption> options, {
+    double? myKatoriMillilitres,
+    double? myGlassMillilitres,
+  }) => [
+    for (final option in options)
+      switch (option.unitName) {
+        'katori' when myKatoriMillilitres != null => ServingOption(
+          unitName: option.unitName,
+          gramWeight:
+              option.gramWeight *
+              myKatoriMillilitres /
+              kStandardKatoriMillilitres,
+          isDefault: option.isDefault,
+        ),
+        'glass' when myGlassMillilitres != null => ServingOption(
+          unitName: option.unitName,
+          gramWeight: myGlassMillilitres,
+          isDefault: option.isDefault,
+        ),
+        _ => option,
+      },
+  ];
+
+  /// A serving chip's words, from its own weight (R-11): "1 Katori (150 g)",
+  /// "My katori (200 g)" once the person has set theirs, "1 Glass (250 ml)".
+  /// Liquids say ml, solids g.
+  static String servingOptionChipLabel(
+    ServingOption option, {
+    bool liquid = false,
+    bool myKatori = false,
+    bool myGlass = false,
+  }) {
+    final weight = option.gramWeight.round();
+    final metric = liquid || option.unitName == 'glass'
+        ? '$weight ml'
+        : '$weight g';
+    if (option.unitName == '100g') return metric;
+    final name = switch (option.unitName) {
+      'katori' when myKatori => 'My katori',
+      'glass' when myGlass => 'My glass',
+      'katori' => '1 Katori',
+      'medium_katori' => 'Med Katori',
+      'small_katori' => 'Small Katori',
+      'serving_bowl' => 'Bowl',
+      'roti_piece' => '1 Roti',
+      'paratha_piece' => '1 Paratha',
+      'stuffed_paratha' => 'Stuffed',
+      'idli_piece' => '1 Idli',
+      'dosa_piece' => '1 Dosa',
+      'glass' => '1 Glass',
+      'tablespoon' => '1 Tbsp',
+      'teaspoon' => '1 Tsp',
+      'plate' => '1 Plate',
+      'fruit_piece' => '1 Fruit',
+      'handful' => '1 Handful',
+      'cereal_bowl' => '1 Bowl',
+      'scoop' => '1 Scoop',
+      final other => other.replaceAll('_', ' '),
+    };
+    return '$name ($metric)';
+  }
 
   @override
   ConsumerState<FoodPortionBottomSheet> createState() =>
@@ -471,30 +538,6 @@ class _FoodPortionBottomSheetState
         ),
       ),
     );
-  }
-
-  String _formatServingOptionChipLabel(ServingOption option) {
-    return switch (option.unitName) {
-      'katori' => '1 Katori (150g)',
-      'medium_katori' => 'Med Katori (200g)',
-      'small_katori' => 'Small Katori (80g)',
-      'serving_bowl' => 'Bowl (300g)',
-      'roti_piece' => '1 Roti (35g)',
-      'paratha_piece' => '1 Paratha (60g)',
-      'stuffed_paratha' => 'Stuffed (110g)',
-      'idli_piece' => '1 Idli (40g)',
-      'dosa_piece' => '1 Dosa (90g)',
-      'glass' => '1 Glass (206ml)',
-      'tablespoon' => '1 Tbsp (15g)',
-      'teaspoon' => '1 Tsp (5g)',
-      'plate' => '1 Plate (150g)',
-      'fruit_piece' => '1 Fruit (120g)',
-      'handful' => '1 Handful (30g)',
-      'cereal_bowl' => '1 Bowl (40g)',
-      'scoop' => '1 Scoop (30g)',
-      '100g' => '100g',
-      _ => '${option.unitName} (${option.gramWeight.round()}g)',
-    };
   }
 
   void _updateAmount(String raw) {
@@ -745,6 +788,11 @@ class _FoodPortionBottomSheetState
     final smaller = nextPortion(_selectedQuantity, increase: false);
     final larger = nextPortion(_selectedQuantity, increase: true);
     final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
+    final myKatori = ref.watch(myKatoriMillilitresProvider).valueOrNull;
+    final myGlass = ref.watch(myGlassMillilitresProvider).valueOrNull;
+    final liquid =
+        _option.measure?.isPerMillilitre == true ||
+        _selectedQuantity.dimension == QuantityDimension.volume;
 
     Widget decreaseButton() => IconButton(
       tooltip: 'Decrease amount',
@@ -887,12 +935,7 @@ class _FoodPortionBottomSheetState
                 if (row.isNotEmpty) _dishChipRow(row),
               const SizedBox(height: 4),
             ],
-            if (liquidServingChips(
-                  _option,
-                  myGlassMillilitres: ref
-                      .watch(myGlassMillilitresProvider)
-                      .valueOrNull,
-                )
+            if (liquidServingChips(_option, myGlassMillilitres: myGlass)
                 case final liquids?) ...[
               _liquidChipRow(liquids),
             ] else if (_servingOptions != null &&
@@ -900,47 +943,66 @@ class _FoodPortionBottomSheetState
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
-                  children: _servingOptions!.map((opt) {
-                    final isSelected =
-                        (_selectedQuantity.unit == QuantityUnit.gram &&
-                        (_selectedQuantity.amount.asDouble - opt.gramWeight)
-                                .abs() <
-                            0.1);
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8.0, bottom: 8.0),
-                      child: ActionChip(
-                        avatar: switch (portionVisualSpecFor(
-                          quantity: Quantity.fromNum(
-                            amount: opt.gramWeight,
-                            unit: QuantityUnit.gram,
+                  children:
+                      FoodPortionBottomSheet.calibratedServingOptions(
+                        _servingOptions!,
+                        myKatoriMillilitres: myKatori,
+                        myGlassMillilitres: myGlass,
+                      ).map((opt) {
+                        final isSelected =
+                            (_selectedQuantity.unit == QuantityUnit.gram &&
+                            (_selectedQuantity.amount.asDouble - opt.gramWeight)
+                                    .abs() <
+                                0.1);
+                        return Padding(
+                          padding: const EdgeInsets.only(
+                            right: 8.0,
+                            bottom: 8.0,
                           ),
-                          servingOptions: [opt],
-                        )) {
-                          final spec? => PortionVesselIcon(vessel: spec.vessel),
-                          null => null,
-                        },
-                        label: Text(_formatServingOptionChipLabel(opt)),
-                        backgroundColor: isSelected
-                            ? context.b05Colors.action.withValues(alpha: 0.15)
-                            : context.b05Colors.surfaceSubtle,
-                        labelStyle: TextStyle(
-                          fontSize: 12,
-                          fontWeight: isSelected
-                              ? FontWeight.w700
-                              : FontWeight.w500,
-                          color: isSelected
-                              ? context.b05Colors.action
-                              : context.b05Colors.textPrimary,
-                        ),
-                        side: BorderSide(
-                          color: isSelected
-                              ? context.b05Colors.action
-                              : context.b05Colors.border,
-                        ),
-                        onPressed: () => _applyServingOption(opt),
-                      ),
-                    );
-                  }).toList(),
+                          child: ActionChip(
+                            avatar: switch (portionVisualSpecFor(
+                              quantity: Quantity.fromNum(
+                                amount: opt.gramWeight,
+                                unit: QuantityUnit.gram,
+                              ),
+                              servingOptions: [opt],
+                            )) {
+                              final spec? => PortionVesselIcon(
+                                vessel: spec.vessel,
+                              ),
+                              null => null,
+                            },
+                            label: Text(
+                              FoodPortionBottomSheet.servingOptionChipLabel(
+                                opt,
+                                liquid: liquid,
+                                myKatori: myKatori != null,
+                                myGlass: myGlass != null,
+                              ),
+                            ),
+                            backgroundColor: isSelected
+                                ? context.b05Colors.action.withValues(
+                                    alpha: 0.15,
+                                  )
+                                : context.b05Colors.surfaceSubtle,
+                            labelStyle: TextStyle(
+                              fontSize: 12,
+                              fontWeight: isSelected
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                              color: isSelected
+                                  ? context.b05Colors.action
+                                  : context.b05Colors.textPrimary,
+                            ),
+                            side: BorderSide(
+                              color: isSelected
+                                  ? context.b05Colors.action
+                                  : context.b05Colors.border,
+                            ),
+                            onPressed: () => _applyServingOption(opt),
+                          ),
+                        );
+                      }).toList(),
                 ),
               ),
               const SizedBox(height: 8),
