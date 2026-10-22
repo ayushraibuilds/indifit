@@ -10,6 +10,7 @@ import 'package:indifit/core/config/app_preferences_keys.dart';
 import 'package:indifit/core/services/auto_backup_secret_store.dart';
 import 'package:indifit/core/services/auto_backup_service.dart';
 import 'package:indifit/data/database/app_database.dart';
+import 'package:indifit/features/settings/settings_controller.dart';
 import 'package:indifit/features/settings/widgets/fresh_backup_gate.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -224,6 +225,72 @@ void main() {
         final previousRestore = before.lastIndexOf('performRestore(');
         expect(gate, greaterThan(previousRestore));
       }
+    });
+  });
+
+  group('a backup file before an erase', () {
+    Future<bool?> runOffer(
+      WidgetTester tester, {
+      required String answer,
+      SettingsExportStatus? exported,
+    }) async {
+      bool? result;
+      var exports = 0;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) => TextButton(
+              onPressed: () async {
+                result = await offerBackupBeforeErase(
+                  context,
+                  export: () async {
+                    exports++;
+                    return exported;
+                  },
+                );
+              },
+              child: const Text('Erase'),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Erase'));
+      await tester.pumpAndSettle();
+      expect(find.text('Keep a copy before erasing?'), findsOneWidget);
+      await tester.tap(find.text(answer));
+      await tester.pumpAndSettle();
+      expect(exports, answer == 'Export backup file' ? 1 : 0);
+      return result;
+    }
+
+    testWidgets('a shared file goes on to the erase', (tester) async {
+      expect(
+        await runOffer(
+          tester,
+          answer: 'Export backup file',
+          exported: SettingsExportStatus.shared,
+        ),
+        isTrue,
+      );
+    });
+
+    testWidgets('a cancelled export stops the erase', (tester) async {
+      expect(
+        await runOffer(
+          tester,
+          answer: 'Export backup file',
+          exported: SettingsExportStatus.cancelled,
+        ),
+        isFalse,
+      );
+    });
+
+    testWidgets('erasing without a copy goes on', (tester) async {
+      expect(await runOffer(tester, answer: 'Erase without a copy'), isTrue);
+    });
+
+    testWidgets('Cancel stops the erase', (tester) async {
+      expect(await runOffer(tester, answer: 'Cancel'), isFalse);
     });
   });
 }

@@ -481,6 +481,13 @@ class DataManagementSection extends ConsumerWidget {
 
     if (proceedToConfirm != true || !context.mounted) return;
 
+    // Erase deletes the recovery copies too: offer a file to keep first.
+    final goOn = await offerBackupBeforeErase(
+      context,
+      export: () => showBackupExportFlow(context, ref),
+    );
+    if (!goOn || !context.mounted) return;
+
     // Step 2: Typed confirmation modal requiring 'DELETE'
     final confirmed = await showDialog<bool>(
       context: context,
