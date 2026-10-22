@@ -170,6 +170,17 @@ class _IndiFitAppState extends ConsumerState<IndiFitApp>
       _checkFoodDatabaseUpdates();
       // Rest notification actions taken in the background are applied by the
       // player screen, which owns the live workout (on resume and on open).
+    } else if (state == AppLifecycleState.paused && _bootstrapped) {
+      // Phones keep the app alive for days, so the cold-start backup alone
+      // goes stale (R-06). Throttled and skipped when nothing changed.
+      unawaited(
+        AutoBackupService(
+          ref.read(databaseProvider),
+        ).runBackgroundBackup().catchError((e) {
+          AppLogger.warning('Background auto-backup failed: $e');
+          return null;
+        }),
+      );
     }
   }
 
