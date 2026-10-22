@@ -159,6 +159,9 @@ abstract final class AppPreferenceKeys {
   // --- Auto Backup ---
   static const autoBackupLastContentFingerprintV2 =
       'auto_backup_last_content_fingerprint_v2';
+  // When the app last backed up on going to the background (R-06), in ms
+  // since epoch. Device-local: not in backups.
+  static const autoBackupLastBackgroundAt = 'auto_backup_last_background_at';
 
   // --- Resumable Onboarding Draft Keys (17 keys) ---
   static const onboardingDraftPage = 'onboarding_draft_page';

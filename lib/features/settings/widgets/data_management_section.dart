@@ -22,6 +22,7 @@ import 'ai_consent_toggle.dart';
 import 'backup_export_flow.dart';
 import 'backup_restore_card.dart';
 import 'cloud_backup_card.dart';
+import 'fresh_backup_gate.dart';
 import 'privacy_disclosure_card.dart';
 import 'settings_reminder_toggle.dart';
 import 'your_data_card.dart';
@@ -205,6 +206,7 @@ class DataManagementSection extends ConsumerWidget {
 
                   if (confirmed != true || !context.mounted) return;
                   Navigator.pop(dialogCtx);
+                  if (!await ensureFreshBackup(context, ref)) return;
                   try {
                     await ref
                         .read(settingsControllerProvider.notifier)
@@ -313,6 +315,7 @@ class DataManagementSection extends ConsumerWidget {
       );
 
       if (confirmed != true || !context.mounted) return;
+      if (!await ensureFreshBackup(context, ref)) return;
       await ref
           .read(settingsControllerProvider.notifier)
           .performRestore(inspection.payload);
@@ -478,6 +481,13 @@ class DataManagementSection extends ConsumerWidget {
 
     if (proceedToConfirm != true || !context.mounted) return;
 
+    // Erase deletes the recovery copies too: offer a file to keep first.
+    final goOn = await offerBackupBeforeErase(
+      context,
+      export: () => showBackupExportFlow(context, ref),
+    );
+    if (!goOn || !context.mounted) return;
+
     // Step 2: Typed confirmation modal requiring 'DELETE'
     final confirmed = await showDialog<bool>(
       context: context,
@@ -584,7 +594,7 @@ class DataManagementSection extends ConsumerWidget {
               Text('Automatic backup', style: B05Typography.title(context)),
               const SizedBox(height: B05Layout.space4),
               Text(
-                'An automatic recovery copy is created on this device when the app starts. Up to three copies are kept. A recovery copy may be unavailable if creation did not finish.',
+                'An automatic recovery copy is saved on this device when the app starts, when you leave it (at most every 30 minutes), and before a restore. Up to three copies are kept. A recovery copy may be unavailable if saving did not finish.',
                 style: B05Typography.body(context),
               ),
               const SizedBox(height: B05Layout.space8),

@@ -121,6 +121,9 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Continue to confirm'));
       await tester.pumpAndSettle();
+      // No backup file this time (N14-13).
+      await tester.tap(find.text('Erase without a copy'));
+      await tester.pumpAndSettle();
 
       // 5. Verify Step 2 modal: title, text field, disabled danger button
       expect(find.text('Type DELETE to confirm'), findsOneWidget);
@@ -210,6 +213,12 @@ void main() {
       await tester.tap(find.text('Continue to confirm'));
       await tester.pumpAndSettle();
 
+      // No backup file this time (N14-13).
+
+      await tester.tap(find.text('Erase without a copy'));
+
+      await tester.pumpAndSettle();
+
       final textField = find.byType(TextField);
       await tester.enterText(textField, 'DELETE');
       await tester.pump();
@@ -272,6 +281,12 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Continue to confirm'));
+    await tester.pumpAndSettle();
+
+    // No backup file this time (N14-13).
+
+    await tester.tap(find.text('Erase without a copy'));
+
     await tester.pumpAndSettle();
 
     final textField = find.byType(TextField);
