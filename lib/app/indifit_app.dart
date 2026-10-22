@@ -14,6 +14,7 @@ import '../core/utils/app_logger.dart';
 import '../data/catalog/catalog_update_service.dart';
 import '../data/database/app_database.dart';
 import '../features/food_log/usual_meal.dart';
+import '../features/nutrition/jain_constraint_sync.dart';
 import '../features/settings/food_database_providers.dart';
 import 'database_readiness.dart';
 import 'database_recovery_screen.dart';
@@ -74,6 +75,14 @@ class _IndiFitAppState extends ConsumerState<IndiFitApp>
     unawaited(
       RestPresenceService.cleanupStaleNotifications().catchError((e) {
         AppLogger.warning('Rest presence startup cleanup failed: $e');
+      }),
+    );
+    // People who chose Jain before UX-16 get its dietary need once.
+    unawaited(
+      ref.read(jainConstraintSyncProvider).migrateExistingUser().catchError((
+        e,
+      ) {
+        AppLogger.warning('Jain dietary need migration failed: $e');
       }),
     );
     unawaited(
