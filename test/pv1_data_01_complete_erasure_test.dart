@@ -616,4 +616,5 @@ const _wave4PreferenceKeys = [
   'pref_my_roti',
   'pref_weigh_in_days',
   'pref_weigh_in_dismissed_date',
+  'pref_protein_nudge_dismissed_date',
 ];
