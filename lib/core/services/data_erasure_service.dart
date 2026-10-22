@@ -156,8 +156,16 @@ class DataErasureService {
 
     try {
       await _db.transaction(() async {
+        // Goal versions are append-only: a trigger aborts every DELETE, which
+        // made erasing fail for anyone with a goal. Lift it for the wipe and
+        // put it back as stored; DDL is transactional, so a failure rolls it
+        // back as well.
+        final lifted = await _liftAppendOnlyDeleteTriggers();
         for (final table in userTables) {
           await _db.delete(table).go();
+        }
+        for (final sql in lifted) {
+          await _db.customStatement(sql);
         }
         // Custom food items & custom exercises
         await (_db.delete(
@@ -331,6 +339,27 @@ class DataErasureService {
 
   /// Complete list of all user-data tables in [AppDatabase] that must be
   /// completely emptied on complete erasure.
+  /// Drops the append-only DELETE triggers on user tables, returning their
+  /// stored SQL so they can be created again unchanged.
+  Future<List<String>> _liftAppendOnlyDeleteTriggers() async {
+    final rows = await _db
+        .customSelect(
+          "SELECT name, sql FROM sqlite_master WHERE type = 'trigger' "
+          "AND name LIKE '%append_only_delete'",
+        )
+        .get();
+    final restore = <String>[];
+    for (final row in rows) {
+      final sql = row.readNullable<String>('sql');
+      if (sql == null) continue;
+      await _db.customStatement(
+        'DROP TRIGGER IF EXISTS "${row.read<String>('name')}"',
+      );
+      restore.add(sql);
+    }
+    return restore;
+  }
+
   static List<TableInfo<Table, dynamic>> _getUserDataTables(AppDatabase db) {
     return <TableInfo<Table, dynamic>>[
       // Nutrition & Food user tables

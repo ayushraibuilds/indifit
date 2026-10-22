@@ -146,6 +146,15 @@ void main() {
           );
         }
 
+        // The append-only protection is back once the wipe is done.
+        final triggers = await db
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type = 'trigger' "
+              "AND name = 'b04_goal_versions_append_only_delete'",
+            )
+            .get();
+        expect(triggers, hasLength(1));
+
         // 2. Custom foods and exercises must be 0
         expect(report.remainingCustomFoodsCount, 0);
         expect(report.remainingCustomExercisesCount, 0);
@@ -438,6 +447,26 @@ class _TestHealthService extends HealthService {
 
 Future<void> _populateExtensiveUserData(AppDatabase db) async {
   final now = DateTime.now().toUtc();
+
+  // Every onboarded user has goal versions, which are append-only in the
+  // database: erasure must still remove them.
+  await db
+      .into(db.nutritionGoalVersions)
+      .insert(
+        NutritionGoalVersionsCompanion.insert(
+          id: 'erasure-goal-v1',
+          userId: 'local-user-v1',
+          versionNumber: 1,
+          goalType: 'maintenance',
+          targetSource: 'user_set',
+          calorieTargetKcal: const Value(2100),
+          proteinTargetG: const Value(140),
+          carbsTargetG: const Value(220),
+          fatTargetG: const Value(65),
+          effectiveFromLocalDate: '2026-10-01',
+          timezoneId: 'Asia/Kolkata',
+        ),
+      );
 
   // 1. User profile
   await db
