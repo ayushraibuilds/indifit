@@ -14,6 +14,7 @@ import '../core/utils/app_logger.dart';
 import '../data/catalog/catalog_update_service.dart';
 import '../data/database/app_database.dart';
 import '../features/food_log/usual_meal.dart';
+import '../features/rating/rating_prompt.dart';
 import '../features/settings/food_database_providers.dart';
 import 'database_readiness.dart';
 import 'database_recovery_screen.dart';
@@ -29,6 +30,7 @@ class _IndiFitAppState extends ConsumerState<IndiFitApp>
     with WidgetsBindingObserver {
   final List<StreamSubscription<dynamic>> _reminderDataSubscriptions = [];
   Timer? _reminderReconcileDebounce;
+  Timer? _ratingCheckDebounce;
   bool _reminderReconcileRunning = false;
   bool _reminderReconcilePending = false;
   bool _reminderTimezoneRefreshPending = false;
@@ -67,6 +69,7 @@ class _IndiFitAppState extends ConsumerState<IndiFitApp>
     if (destination != null) ref.read(appRouterProvider).go(destination);
     final db = ref.read(databaseProvider);
     _startReminderDataWatchers(db);
+    _startRatingWatchers(db);
     unawaited(_reconcileReminders());
     // Clear any rest-timer notifications orphaned by a pre-restart crash.
     // No rest state is reconstructed: presence is foreground-driven and the
@@ -114,6 +117,33 @@ class _IndiFitAppState extends ConsumerState<IndiFitApp>
     ]);
   }
 
+  /// A saved workout or a logged food may be the good moment for the store
+  /// rating prompt (N14-12); the prompt owns every other rule.
+  void _startRatingWatchers(AppDatabase db) {
+    final rating = ref.read(ratingPromptProvider);
+    unawaited(
+      rating.startSession().catchError((e) {
+        AppLogger.warning('Rating prompt session start failed: $e');
+      }),
+    );
+    void queue() {
+      _ratingCheckDebounce?.cancel();
+      // Let the save's own confirmation land first.
+      _ratingCheckDebounce = Timer(const Duration(seconds: 2), () {
+        unawaited(rating.maybeAsk());
+      });
+    }
+
+    _reminderDataSubscriptions.addAll([
+      db.select(db.workoutSessions).watch().skip(1).listen((_) => queue()),
+      db
+          .select(db.nutritionConsumptionSnapshots)
+          .watch()
+          .skip(1)
+          .listen((_) => queue()),
+    ]);
+  }
+
   void _queueReminderReconciliation({bool refreshTimezone = false}) {
     _reminderTimezoneRefreshPending |= refreshTimezone;
     _reminderReconcileDebounce?.cancel();
@@ -155,6 +185,7 @@ class _IndiFitAppState extends ConsumerState<IndiFitApp>
   @override
   void dispose() {
     _reminderReconcileDebounce?.cancel();
+    _ratingCheckDebounce?.cancel();
     for (final subscription in _reminderDataSubscriptions) {
       unawaited(subscription.cancel());
     }
@@ -220,6 +251,10 @@ class _IndiFitAppState extends ConsumerState<IndiFitApp>
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
       routerConfig: router,
+      builder: (context, child) => ErrorAwareScaffoldMessenger(
+        onErrorShown: ref.read(ratingPromptProvider).noteErrorShown,
+        child: child ?? const SizedBox.shrink(),
+      ),
     );
   }
 }

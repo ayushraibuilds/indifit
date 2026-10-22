@@ -156,6 +156,12 @@ abstract final class AppPreferenceKeys {
   static const weeklyActionText = 'weekly_action_text';
   static const weeklyActionTarget = 'weekly_action_target';
 
+  // --- Rating prompt (device-local, not in backups; N14-12) ---
+  // The app version the store rating prompt was last asked for, and whether
+  // the app has been opened before (never ask in the first session).
+  static const ratingPromptAskedVersion = 'rating_prompt_asked_version';
+  static const ratingPromptOpenedBefore = 'rating_prompt_opened_before';
+
   // --- Auto Backup ---
   static const autoBackupLastContentFingerprintV2 =
       'auto_backup_last_content_fingerprint_v2';
