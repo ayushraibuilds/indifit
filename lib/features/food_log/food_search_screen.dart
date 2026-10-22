@@ -185,10 +185,14 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     return FoodQueryAmount(units).label(servingUnit: measure!.unit);
   }
 
-  /// What the "+" logs, in the words on the button: the typed amount, else
-  /// the default serving. The confirmation uses the same label (UR-14).
-  String? _fastAddAmountLabel(NutritionFoodOption option) =>
-      _resolvedSearch?.amount?.label(servingUnit: option.measure?.unit) ??
+  /// What the "+" logs, in the words on the button: the amount typed with
+  /// [search], else the default serving. The confirmation uses the same
+  /// label (UR-14).
+  String? _fastAddAmountLabel(
+    NutritionFoodOption option,
+    ResolvedFoodSearch? search,
+  ) =>
+      search?.amount?.label(servingUnit: option.measure?.unit) ??
       _defaultAmountLabel(option);
 
   /// Option ids whose Add button shows the tick after a saved fast add.
@@ -786,18 +790,24 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     }
   }
 
-  /// The amount a legacy row's "+" shows: the typed amount, else its serving.
-  String? _legacyButtonLabel(FoodItem food) =>
-      _resolvedSearch?.amount?.label(servingUnit: food.servingUnit) ??
+  /// The amount a legacy row's "+" shows: the amount typed with [search],
+  /// else its serving.
+  String? _legacyButtonLabel(FoodItem food, ResolvedFoodSearch? search) =>
+      search?.amount?.label(servingUnit: food.servingUnit) ??
       _legacyAmountLabel(food);
 
-  Future<void> _openLegacyFastAdd(FoodItem food, {String? buttonLabel}) async {
+  Future<void> _openLegacyFastAdd(
+    FoodItem food, {
+    required ResolvedFoodSearch? search,
+    required String? buttonLabel,
+  }) async {
     try {
       final catalog = await ref.read(
         nutritionFoodCatalogRepositoryProvider.future,
       );
       await _addOptionFast(
         await catalog.ensureLegacyFood(food),
+        search: search,
         buttonLabel: buttonLabel,
       );
     } catch (error, stackTrace) {
@@ -987,11 +997,13 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     });
   }
 
-  /// [buttonLabel] is the amount the "+" showed when the row isn't a
-  /// catalogue food (a legacy row's own serving).
+  /// Logs [option] from its "+". [search] and [buttonLabel] are what the
+  /// row showed when tapped: the search can change while this awaits, and
+  /// the confirmation must name the amount the button named (R-1).
   Future<void> _addOptionFast(
     NutritionFoodOption option, {
-    String? buttonLabel,
+    required ResolvedFoodSearch? search,
+    required String? buttonLabel,
   }) async {
     // UI taps generate distinct command IDs. Guard before the first await so
     // a physical double tap cannot turn into two valid canonical commands.
@@ -1003,8 +1015,8 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       // "+ 3 pieces" logs the amount typed with the search (UR-02). An
       // amount that doesn't fit this food opens the portion sheet instead
       // of quietly logging something else.
-      final typedAmount = _resolvedSearch?.amount;
-      final typed = typedAmount == null ? null : _typedQuantityFor(option);
+      final typedAmount = search?.amount;
+      final typed = typedAmount?.quantityFor(option);
       if ((typedAmount != null && typed == null) ||
           (typed == null && !_hasSafeDefaultServing(option))) {
         await _showLogDialog(option, mealType: selectedMealType);
@@ -1038,10 +1050,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         mealCategory: selectedMealType,
       );
       // The button's own label, so the toast says what the "+" said.
-      final amount =
-          buttonLabel ??
-          _fastAddAmountLabel(option) ??
-          option.measure?.pickedAmountLabel(quantity);
+      final amount = buttonLabel ?? option.measure?.pickedAmountLabel(quantity);
       _rememberLog(
         LoggedSearchItem(
           snapshot: snapshot,
@@ -2232,12 +2241,18 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
 
   Widget _buildCanonicalFastAddAction(NutritionFoodOption option) {
     final isAdding = _fastAddInFlight.contains(option.id);
+    final search = _resolvedSearch;
+    final amountLabel = _fastAddAmountLabel(option, search);
     return _buildFastAddAction(
       foodName: _consumerFoodName(option.displayName),
-      amountLabel: _fastAddAmountLabel(option),
+      amountLabel: amountLabel,
       isAdding: isAdding,
       added: _fastAddSucceeded.containsKey(option.id),
-      onPressed: isAdding ? null : () => unawaited(_addOptionFast(option)),
+      onPressed: isAdding
+          ? null
+          : () => unawaited(
+              _addOptionFast(option, search: search, buttonLabel: amountLabel),
+            ),
     );
   }
 
@@ -2558,6 +2573,8 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   Widget _buildLocalItemRow(FoodItem food, {bool recent = false}) {
     final displayName = _consumerFoodName(food.name);
     final serving = _localServingLabel(food);
+    final search = _resolvedSearch;
+    final fastAddLabel = recent ? null : _legacyButtonLabel(food, search);
     final metadata = [
       '${_numberLabel(food.calories)} kcal',
       '${_numberLabel(food.proteinG)} g protein',
@@ -2642,11 +2659,12 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                     : null)
               : _buildFastAddAction(
                   foodName: displayName,
-                  amountLabel: recent ? null : _legacyButtonLabel(food),
+                  amountLabel: fastAddLabel,
                   onPressed: () => unawaited(
                     _openLegacyFastAdd(
                       food,
-                      buttonLabel: _legacyButtonLabel(food),
+                      search: search,
+                      buttonLabel: fastAddLabel,
                     ),
                   ),
                 ),
