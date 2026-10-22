@@ -8,12 +8,13 @@ import '../../core/di/theme_provider.dart';
 import '../../core/di/user_profile_provider.dart';
 import '../../core/presentation/consumer_copy.dart';
 import '../../core/presentation/diet_preference_presentation.dart';
-import '../../core/presentation/secondary_presentation.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/consumer_task_primitives.dart';
 import '../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../data/repositories/health_service.dart';
+import '../../data/repositories/offline_starter_plan_catalog.dart';
+import '../../data/repositories/plan_library_read_repository.dart';
 import '../dashboard/widgets/appearance_bottom_sheet.dart';
 import '../dashboard/widgets/dashboard_module_customization_panel.dart';
 import '../education/learn_screen.dart';
@@ -21,6 +22,7 @@ import '../equipment/equipment_profiles_screen.dart';
 import '../media/b05_playlist_launcher.dart';
 import '../profile/profile_screen.dart';
 import '../support/tip_jar_screen.dart';
+import '../training/training_providers.dart';
 import 'about_credits_screen.dart';
 import 'data_management_sub_screen.dart';
 import 'diary_structure_screen.dart';
@@ -33,6 +35,21 @@ import 'nutrition_targets_hub_screen.dart';
 import 'regional_food_packs_screen.dart';
 import 'settings_controller.dart';
 import 'unit_preference.dart';
+
+/// The active plan's days a week and level ("4 days a week · Beginner"),
+/// or what the screen holds without a plan.
+String trainingPreferencesSummary(PlanLibrarySnapshot? plans) {
+  final activeId = plans?.activeProgramVersionId;
+  final active = activeId == null ? null : plans!.entryForVersion(activeId);
+  if (active == null) return 'Equipment and limits';
+  final days =
+      active.starterPlan?.daysPerWeek ?? active.metadata.trainingDaysPerWeek;
+  final parts = [
+    if (days != null) '$days ${days == 1 ? 'day' : 'days'} a week',
+    ?active.starterPlan?.experience.label,
+  ];
+  return parts.isEmpty ? active.program.name : parts.join(' · ');
+}
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -127,11 +144,10 @@ class SettingsScreen extends ConsumerWidget {
                     _SettingsRow(
                       icon: Icons.directions_run_outlined,
                       title: 'Training preferences',
-                      summary: profile.hasProfile
-                          ? SecondaryConsumerCopy.activity(
-                              profile.userActivityLevel,
-                            )
-                          : 'Activity and personal limits',
+                      // Training, not the nutrition activity level (UR-24).
+                      summary: trainingPreferencesSummary(
+                        ref.watch(planLibrarySnapshotProvider).valueOrNull,
+                      ),
                       onTap: () => _push(
                         context,
                         const ProfileScreen(focus: ProfileEditorFocus.training),
