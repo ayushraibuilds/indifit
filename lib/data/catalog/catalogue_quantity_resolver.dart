@@ -96,14 +96,11 @@ class CatalogueFoodMeasure {
     );
   }
 
-  /// [quantity] in the words the user picked it in: "1 katori (150 g)",
-  /// "2 pieces (100 g)" (UR-16). Null when this food has no household unit
-  /// or [quantity] isn't a whole or half count of it; callers then show the
-  /// quantity as stored.
-  String? pickedAmountLabel(Quantity quantity) {
-    final household = unit;
+  /// How many of this food's household unit [quantity] is (2 for "2
+  /// katori"), when it's a whole or half count; null otherwise.
+  double? pickedHouseholdCount(Quantity quantity) {
     final units = unitsPerServing;
-    if (household == null || units == null) return null;
+    if (unit == null || units == null) return null;
     final QuantityAmount? servings;
     try {
       servings = _servings(quantity);
@@ -111,14 +108,24 @@ class CatalogueFoodMeasure {
       return null;
     }
     if (servings == null) return null;
-    final count = servings.multiply(units);
-    final halves = count.asDouble * 2;
-    if (count.asDouble <= 0 || (halves - halves.round()).abs() > 0.001) {
-      return null;
-    }
+    final count = servings.multiply(units).asDouble;
+    final halves = count * 2;
+    if (count <= 0 || (halves - halves.round()).abs() > 0.001) return null;
+    return halves.round() / 2;
+  }
+
+  /// [quantity] in the words the user picked it in: "1 katori (150 g)",
+  /// "2 pieces (100 g)" (UR-16). Null when this food has no household unit
+  /// or [quantity] isn't a whole or half count of it; callers then show the
+  /// quantity as stored.
+  String? pickedAmountLabel(Quantity quantity) {
+    final household = unit;
+    final halfCount = pickedHouseholdCount(quantity);
+    if (household == null || halfCount == null) return null;
+    final servings = _servings(quantity)!;
     final countLabel = QuantityFormatter.format(
-      householdQuantity(household, QuantityAmount.fromNum(halves.round() / 2)),
-      decimalPlaces: halves.round().isEven ? 0 : 1,
+      householdQuantity(household, QuantityAmount.fromNum(halfCount)),
+      decimalPlaces: halfCount == halfCount.roundToDouble() ? 0 : 1,
     );
     final grams = gramsPerServing;
     final millilitres = millilitresPerServing;

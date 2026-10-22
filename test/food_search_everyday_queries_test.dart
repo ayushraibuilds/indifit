@@ -307,4 +307,37 @@ void main() {
       expect(resolved.query, 'dal fry');
     });
   });
+
+  group('the dish word is kept when a word is dropped (R-9)', () {
+    Future<(bool, String?)> first(String query) async {
+      final (resolved, ranked) = await pipeline.search(query);
+      return (
+        resolved.relaxed,
+        ranked.isEmpty ? null : ranked.first.candidate.displayName,
+      );
+    }
+
+    test('a describing word in front is dropped', () async {
+      expect((await first('cheese dosa')).$2, contains('Dosa'));
+      expect((await first('fried momos')).$2, contains('Momos'));
+      expect((await first('egg fried rice')).$2, contains('Fried Rice'));
+      expect((await first('cheese dosa')).$1, isTrue);
+    });
+
+    test('dropping the dish word shows nothing, not another food', () async {
+      for (final query in ['protein bar', 'paneer wrap']) {
+        final (relaxed, name) = await first(query);
+        expect(relaxed, isFalse, reason: query);
+        expect(name, isNot(contains('Whey Protein')), reason: query);
+        expect(name, isNot(contains('Raw')), reason: query);
+      }
+    });
+
+    test('a number in the name has to match', () async {
+      final (relaxed, name) = await first('chicken 65');
+      expect(relaxed, isFalse);
+      expect(name, isNot(contains('Chicken Tikka')));
+      expect(await pipeline.dropOneWord('chicken 65'), isNull);
+    });
+  });
 }
