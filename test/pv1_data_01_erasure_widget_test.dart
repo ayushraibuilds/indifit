@@ -14,6 +14,7 @@ import 'support/indifit_test_harness.dart';
 class _MockDataErasureService extends DataErasureService {
   int eraseCalls = 0;
   bool isSuccessResult = true;
+  bool dataRemovedResult = true;
 
   _MockDataErasureService({required super.db, required super.healthService});
 
@@ -22,6 +23,7 @@ class _MockDataErasureService extends DataErasureService {
     eraseCalls++;
     return DataErasureReport(
       isSuccess: isSuccessResult,
+      dataRemoved: dataRemovedResult,
       completedAtUtc: DateTime.now().toUtc(),
       remainingUserTableCounts: const {},
       remainingCustomFoodsCount: 0,
@@ -238,6 +240,72 @@ void main() {
       );
     },
   );
+
+  testWidgets('a wipe that removed nothing says so and keeps the person safe', (
+    WidgetTester tester,
+  ) async {
+    final databases = registerTestDatabaseScope();
+    final db = databases.create();
+    final fakeErasureService =
+        _MockDataErasureService(db: db, healthService: _MockHealthService())
+          ..isSuccessResult = false
+          ..dataRemovedResult = false;
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          dataErasureServiceProvider.overrideWithValue(fakeErasureService),
+          settingsControllerProvider.overrideWith(
+            (ref) => SettingsController(ref),
+          ),
+          onboardingCompletedProvider.overrideWith((ref) => true),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: const Scaffold(
+            body: SingleChildScrollView(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: DataManagementSection(),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final eraseButton = find.widgetWithText(FilledButton, 'Erase all data');
+    await tester.ensureVisible(eraseButton);
+    await tester.tap(eraseButton);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Continue to confirm'));
+    await tester.pumpAndSettle();
+
+    // No backup file this time (N14-13).
+
+    await tester.tap(find.text('Erase without a copy'));
+
+    await tester.pumpAndSettle();
+
+    final textField = find.byType(TextField);
+    await tester.enterText(textField, 'DELETE');
+    await tester.pump();
+
+    final dialogConfirmButton = find.descendant(
+      of: find.byType(AlertDialog),
+      matching: find.widgetWithText(FilledButton, 'Erase all data'),
+    );
+    await tester.tap(dialogConfirmButton);
+    await tester.pumpAndSettle();
+
+    expect(fakeErasureService.eraseCalls, 1);
+    expect(find.text('Erase didn\'t finish'), findsOneWidget);
+    expect(find.textContaining('Nothing was removed.'), findsOneWidget);
+    expect(find.text('Erasure verification failed'), findsNothing);
+  });
 
   testWidgets('shows error snackbar when erasure throws unexpected exception', (
     WidgetTester tester,
