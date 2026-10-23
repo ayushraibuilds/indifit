@@ -72,6 +72,18 @@ bool isBarbellPlateCalculatorSupported({
   return true;
 }
 
+/// The plates the calculator loads, heaviest first. The lightest one sets
+/// the smallest barbell step (UF-12).
+const kPlateCalculatorPlatesKg = <double>[
+  25.0,
+  20.0,
+  15.0,
+  10.0,
+  5.0,
+  2.5,
+  1.25,
+];
+
 /// Reusable plate loading calculator view used across the workout player,
 /// exercise details sheet, and exercise history.
 class PlateCalculatorView extends StatefulWidget {
@@ -103,15 +115,7 @@ class _PlateCalculatorViewState extends State<PlateCalculatorView> {
   final Map<double, int> _calculatedPlates = {};
   double _unmatchedWeight = 0.0;
 
-  final List<double> _availablePlates = const [
-    25.0,
-    20.0,
-    15.0,
-    10.0,
-    5.0,
-    2.5,
-    1.25,
-  ];
+  final List<double> _availablePlates = kPlateCalculatorPlatesKg;
 
   @override
   void initState() {
