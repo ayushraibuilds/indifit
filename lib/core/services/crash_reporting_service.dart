@@ -156,6 +156,36 @@ class CrashReportingService {
     );
   }
 
+  /// Test hook to intercept Sentry.addBreadcrumb in unit tests.
+  @visibleForTesting
+  static FutureOr<void> Function(Breadcrumb) breadcrumbSink = (b) =>
+      Sentry.addBreadcrumb(b);
+
+  /// Adds a log line as a breadcrumb so a later crash report shows what led
+  /// up to it. Only while reporting is on and Sentry is running. It carries
+  /// the category, the level and the error's type ("StateError"), never the
+  /// message: log lines quote food names, typed text and numbers.
+  static void addLogBreadcrumb({
+    String? category,
+    required SentryLevel level,
+    Object? error,
+  }) {
+    if (!_isEnabled || !_sentryStarted) return;
+    breadcrumbSink(
+      Breadcrumb(
+        message: error?.runtimeType.toString(),
+        category: _scrubCategory(category),
+        level: level,
+        type: 'debug',
+      ),
+    );
+  }
+
+  static String _scrubCategory(String? tag) {
+    final t = tag?.trim() ?? '';
+    return RegExp(r'^[A-Za-z][A-Za-z ]{0,39}$').hasMatch(t) ? t : 'log';
+  }
+
   /// Alias for captureException to support recordCrash calls
   static void recordCrash(
     dynamic exception,
@@ -196,6 +226,10 @@ class CrashReportingService {
   /// Test hook: forget whether Sentry was started.
   @visibleForTesting
   static void debugReset() => _sentryStarted = false;
+
+  /// Test hook: pretend Sentry is running without starting it.
+  @visibleForTesting
+  static void debugMarkStarted() => _sentryStarted = true;
 
   static const _redacted = '<redacted>';
 

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import '../services/crash_reporting_service.dart';
 
 abstract class AppException implements Exception {
@@ -36,6 +37,10 @@ class AppLogger {
     if (kDebugMode) {
       debugPrint('[WARN]${tag != null ? ' [$tag]' : ''}: $message');
     }
+    CrashReportingService.addLogBreadcrumb(
+      category: tag,
+      level: SentryLevel.warning,
+    );
   }
 
   static void error(
@@ -48,6 +53,13 @@ class AppLogger {
       debugPrint('[ERROR]${tag != null ? ' [$tag]' : ''}: $message');
       if (error != null) debugPrint('Error details: $error');
     }
+    // Release builds print nothing, so the next crash report gets a
+    // breadcrumb: the category, the level and the error's type only.
+    CrashReportingService.addLogBreadcrumb(
+      category: tag,
+      level: SentryLevel.error,
+      error: error,
+    );
   }
 
   static void recordCrash(

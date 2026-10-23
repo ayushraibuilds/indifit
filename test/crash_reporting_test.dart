@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/config/app_preferences_keys.dart';
 import 'package:indifit/core/services/crash_reporting_service.dart';
+import 'package:indifit/core/utils/app_logger.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -157,4 +158,69 @@ void main() {
       expect(options.sendDefaultPii, isFalse);
     },
   );
+
+  group('log breadcrumbs (R-5)', () {
+    final crumbs = <Breadcrumb>[];
+
+    setUp(() {
+      crumbs.clear();
+      CrashReportingService.breadcrumbSink = crumbs.add;
+    });
+
+    Future<void> enable({required bool optIn, required bool started}) async {
+      SharedPreferences.setMockInitialValues({
+        CrashReportingService.prefCrashReportingEnabled: optIn,
+      });
+      await CrashReportingService.initialize(() {});
+      CrashReportingService.debugReset();
+      if (started) CrashReportingService.debugMarkStarted();
+    }
+
+    test('nothing is added while opted out or without a DSN', () async {
+      await enable(optIn: false, started: true);
+      AppLogger.error('Failed to save meal');
+      AppLogger.warning('Slow query');
+
+      await enable(optIn: true, started: false); // placeholder DSN
+      AppLogger.error('Failed to save meal');
+
+      expect(crumbs, isEmpty);
+    });
+
+    test(
+      'error and warning add the category, level and error type only',
+      () async {
+        await enable(optIn: true, started: true);
+        AppLogger.error(
+          'Failed to log Paneer Tikka 250g for food-seed-123',
+          StateError('boom'),
+          null,
+          'FoodLog',
+        );
+        AppLogger.error('Save failed: "masala dosa"', null, null, 'FoodLog');
+        AppLogger.warning('Search slow: "masala dosa" took 812 ms', 'Search');
+        AppLogger.info('not a breadcrumb');
+
+        expect(crumbs, hasLength(3));
+        expect(crumbs[0].category, 'FoodLog');
+        expect(crumbs[0].level, SentryLevel.error);
+        expect(crumbs[0].message, 'StateError');
+        expect(crumbs[0].data, isNull);
+        expect(crumbs[1].message, isNull);
+        expect(crumbs[2].category, 'Search');
+        expect(crumbs[2].level, SentryLevel.warning);
+        expect(crumbs[2].message, isNull);
+        for (final crumb in crumbs) {
+          expect('${crumb.message}', isNot(contains('dosa')));
+          expect('${crumb.message}', isNot(contains('Paneer')));
+        }
+      },
+    );
+
+    test('an odd tag falls back to a generic category', () async {
+      await enable(optIn: true, started: true);
+      AppLogger.warning('Retrying', 'user_42::id');
+      expect(crumbs.single.category, 'log');
+    });
+  });
 }
