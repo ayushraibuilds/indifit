@@ -8,7 +8,7 @@ import 'package:indifit/features/food_log/my_chai.dart';
 import 'package:indifit/features/food_log/widgets/food_portion_bottom_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// R-11 serving chips from their own weights; R-10 black tea and vegans.
+/// R-11 serving chips from their own weights; R-10 My chai and vegans.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -80,21 +80,18 @@ void main() {
   });
 
   group('My chai and diets (R-10)', () {
-    const milky = MyChaiSettings.defaults;
-    final black = MyChaiSettings.defaults.copyWith(
-      milkShare: MyChaiMilkShare.none,
-    );
+    const chai = MyChaiSettings.defaults;
 
-    test('a vegan is offered black tea, not a milky chai', () {
-      expect(myChaiFitsDiet(milky, 'vegan'), isFalse);
-      expect(myChaiFitsDiet(milky, 'Vegan '), isFalse);
-      expect(myChaiFitsDiet(black, 'vegan'), isTrue);
-      expect(myChaiFitsDiet(milky, 'veg'), isTrue);
-      expect(myChaiFitsDiet(milky, null), isTrue);
+    test('a vegan diet is not offered My chai', () {
+      expect(myChaiFitsDiet('vegan'), isFalse);
+      expect(myChaiFitsDiet('Vegan '), isFalse);
+      expect(myChaiFitsDiet('veg'), isTrue);
+      expect(myChaiFitsDiet('eggetarian'), isTrue);
+      expect(myChaiFitsDiet(null), isTrue);
     });
 
     test('offeredMyChaiProvider follows the diet', () async {
-      Future<MyChaiSettings?> offered(MyChaiSettings chai, String diet) async {
+      Future<MyChaiSettings?> offered(String diet) async {
         SharedPreferences.setMockInitialValues({});
         final prefs = await SharedPreferences.getInstance();
         await chai.write(prefs);
@@ -108,9 +105,9 @@ void main() {
         return container.read(offeredMyChaiProvider);
       }
 
-      expect(await offered(milky, 'vegan'), isNull);
-      expect(await offered(black, 'vegan'), black);
-      expect(await offered(milky, 'veg'), milky);
+      expect(await offered('vegan'), isNull);
+      expect(await offered('veg'), chai);
+      expect(await offered('non-veg'), chai);
     });
 
     test('search starter chips leave Chai out for vegans', () {
@@ -121,7 +118,7 @@ void main() {
       expect(foodStapleSuggestions(mealType: 'snack'), contains('Chai'));
     });
 
-    test('settings saved before black tea still read back', () async {
+    test('saved My chai settings still read back', () async {
       SharedPreferences.setMockInitialValues({
         AppPreferenceKeys.prefMyChaiMilk: 'toned',
         AppPreferenceKeys.prefMyChaiMilkShare: 'half',
@@ -130,9 +127,6 @@ void main() {
       });
       final prefs = await SharedPreferences.getInstance();
       expect(MyChaiSettings.read(prefs), MyChaiSettings.defaults);
-      await black.write(prefs);
-      expect(MyChaiSettings.read(prefs), black);
-      expect(MyChaiSettings.read(prefs)!.milkMillilitres, 0);
     });
   });
 }
