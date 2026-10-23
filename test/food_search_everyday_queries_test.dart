@@ -333,6 +333,29 @@ void main() {
       }
     });
 
+    test('the number rule runs after the amount is split off', () async {
+      for (final (query, name) in [
+        ('paneer 100g', 'Paneer'),
+        ('roti 2', 'Roti'),
+        ('2 boiled eggs', 'Boiled Eggs'),
+        ('parle g', 'Glucose Biscuits'),
+      ]) {
+        final (_, top) = await first(query);
+        expect(top, contains(name), reason: query);
+      }
+      expect((await pipeline.resolve('roti 2')).amount?.amount, 2);
+      expect((await pipeline.resolve('paneer 100g')).query, 'paneer');
+      // Product names the catalogue doesn't carry find nothing on the phone
+      // (online search may), never Upma or a stir fry.
+      for (final query in ['7 up', '5 star']) {
+        final (relaxed, top) = await first(query);
+        expect(top, isNull, reason: query);
+        expect(relaxed, isFalse, reason: query);
+        expect((await pipeline.resolve(query)).query, query);
+      }
+      expect(FoodQueryParser.parse('chicken 65').amount, isNull);
+    });
+
     test('a number in the name has to match', () async {
       final (relaxed, name) = await first('chicken 65');
       expect(relaxed, isFalse);

@@ -131,12 +131,17 @@ class FoodSearchPipeline {
     ];
   }
 
-  Future<List<NutritionFoodSearchResult>> rank(String query) async =>
-      NutritionFoodSearchRanking.rank(
-        query: query,
-        candidates: await candidates(query),
-        oneRowPerDish: true,
-      );
+  /// Ranks [query]. [numbersMustMatch] once the amount has been split off
+  /// (R-9); the whole typed text ("2 roti") is ranked without it.
+  Future<List<NutritionFoodSearchResult>> rank(
+    String query, {
+    bool numbersMustMatch = true,
+  }) async => NutritionFoodSearchRanking.rank(
+    query: query,
+    candidates: await candidates(query),
+    oneRowPerDish: true,
+    numbersMustMatch: numbersMustMatch,
+  );
 
   /// Splits the amount off [typed] and picks the words to search.
   ///
@@ -150,7 +155,7 @@ class FoodSearchPipeline {
     var amount = parsed.amount;
     var ranked = <NutritionFoodSearchResult>[];
     if (parsed.bareNumber) {
-      final whole = await rank(parsed.original);
+      final whole = await rank(parsed.original, numbersMustMatch: false);
       final wholeName = NutritionFoodSearchVocabulary.normalize(
         parsed.original,
       );

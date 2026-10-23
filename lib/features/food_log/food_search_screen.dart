@@ -467,6 +467,8 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       candidates: candidates,
       history: _searchHistory(),
       oneRowPerDish: true,
+      // [query] has had its amount split off (R-9).
+      numbersMustMatch: true,
     );
     // Online matches arrive after the on-device ones. Keep them below, so the
     // rows already on screen never move under the user's finger.
@@ -644,6 +646,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
             for (final food in local) NutritionFoodSearchCandidate.legacy(food),
           ],
           limit: 1,
+          numbersMustMatch: true,
         ).isEmpty) {
       unawaited(() async {
         final relaxed = await _relaxedSearch(resolved);

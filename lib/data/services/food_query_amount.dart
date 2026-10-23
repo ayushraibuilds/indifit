@@ -150,6 +150,8 @@ class FoodQueryParser {
     caseSensitive: false,
   );
 
+  static final RegExp _bareTrailing = RegExp(r'^(.*[^\d\s])\s+(\d{1,2})$');
+
   static ParsedFoodQuery parse(String query) {
     final text = query.trim();
     for (final pattern in [_leading, _trailing]) {
@@ -173,6 +175,17 @@ class FoodQueryParser {
         original: text,
         food: text.substring(bare.end).trim(),
         amount: FoodQueryAmount(_amount(bare.group(1)!)),
+        bareNumber: true,
+      );
+    }
+    // "roti 2": a small count after the food. Bigger numbers name the dish
+    // ("chicken 65"), so they stay in the search.
+    final trailing = _bareTrailing.firstMatch(text);
+    if (trailing != null && int.parse(trailing.group(2)!) <= 12) {
+      return ParsedFoodQuery(
+        original: text,
+        food: trailing.group(1)!.trim(),
+        amount: FoodQueryAmount(double.parse(trailing.group(2)!)),
         bareNumber: true,
       );
     }
