@@ -20,6 +20,8 @@ import 'package:indifit/features/workout_player/widgets/manual_log_sheet.dart';
 import 'package:indifit/features/workout_player/widgets/plate_calculator_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'support/onboarding_about.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -493,6 +495,8 @@ void main() {
     expect(FocusManager.instance.primaryFocus, isNotNull);
 
     await tester.tap(find.text('Female'));
+
+    await useOnboardingAboutDefaults(tester);
     await tester.pump();
     final focusedChoiceEditable = find.byType(EditableText).evaluate().where((
       element,

@@ -116,8 +116,9 @@ class TdeeCalculator {
     } else if (goal == FitnessGoal.muscleGain) {
       final surplus = math.min(300, (tdee * 0.15).round());
       targetCalories += surplus;
-      minCalories = (tdee + (surplus * 0.5)).round();
-      maxCalories = (tdee + surplus).round();
+      // The zone is centred on the target (UR-25), half a surplus each side.
+      minCalories = (targetCalories - surplus * 0.5).round();
+      maxCalories = (targetCalories + surplus * 0.5).round();
     } else {
       minCalories = targetCalories - 100;
       maxCalories = targetCalories + 100;

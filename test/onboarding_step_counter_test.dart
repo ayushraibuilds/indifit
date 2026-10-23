@@ -6,6 +6,8 @@ import 'package:indifit/data/database/app_database.dart';
 import 'package:indifit/features/onboarding/onboarding_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'support/onboarding_about.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -45,8 +47,11 @@ void main() {
         expect(find.text('cm'), findsOneWidget);
         expect(find.text('kg'), findsOneWidget);
 
-        // Enter valid age
-        final ageField = find.byType(TextField).at(0);
+        // Nothing is ticked before it's set (UR-25).
+        expect(find.byIcon(Icons.check_circle_rounded), findsNothing);
+
+        // Enter valid age (field 0 is the name)
+        final ageField = find.byType(TextField).at(1);
         await tester.enterText(ageField, '25');
         await tester.pump();
 
@@ -81,6 +86,7 @@ void main() {
         // have defaults).
         expect(find.text('2 of 5'), findsOneWidget);
         await tapVisible('Male');
+        await useOnboardingAboutDefaults(tester);
         await tapVisible('Next step');
 
         // Step 3 of 5: Activity

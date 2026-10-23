@@ -26,6 +26,7 @@ class OnboardingRulerPicker extends StatefulWidget {
     required this.step,
     required this.majorEvery,
     required this.onChanged,
+    this.placeholder,
     super.key,
   });
 
@@ -39,6 +40,9 @@ class OnboardingRulerPicker extends StatefulWidget {
   /// Every [majorEvery] steps the tick is taller and carries a number.
   final int majorEvery;
   final ValueChanged<String> onChanged;
+
+  /// Where the ruler rests while the field is empty (UR-25).
+  final double? placeholder;
 
   /// Distance between two ticks.
   static const double tickSpacing = 10;
@@ -56,7 +60,7 @@ class _OnboardingRulerPickerState extends State<OnboardingRulerPicker> {
 
   double get _value {
     final parsed = double.tryParse(widget.controller.text.trim());
-    return _snap(parsed ?? (widget.min + widget.max) / 2);
+    return _snap(parsed ?? widget.placeholder ?? (widget.min + widget.max) / 2);
   }
 
   double _snap(double value) {

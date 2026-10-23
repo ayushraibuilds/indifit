@@ -14,6 +14,8 @@ import 'package:indifit/features/onboarding/widgets/onboarding_target_reveal.dar
 import 'package:indifit/features/onboarding/widgets/onboarding_welcome.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'support/onboarding_about.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   tearDown(() => IndiFitHaptics.debugHandler = null);
@@ -277,6 +279,7 @@ void main() {
 
       await tap('Next step');
       await tap('Male');
+      await useOnboardingAboutDefaults(tester);
       await tap('Next step');
       await tap('Next step');
       await tap('Review setup');

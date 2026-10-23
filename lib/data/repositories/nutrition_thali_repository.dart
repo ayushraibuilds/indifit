@@ -262,7 +262,7 @@ class NutritionThaliRepository {
 
   NutritionThaliDraft newDraft({
     required String userId,
-    String name = 'My Thali',
+    String name = kDefaultThaliName,
     String? description,
     Iterable<NutritionThaliItem> items = const [],
   }) {
@@ -574,6 +574,8 @@ class NutritionThaliRepository {
         'thali_id': draft.id,
         'thali_version': draft.currentVersion,
         'thali_fingerprint': draft.compositionFingerprint,
+        // The logged meal keeps this name ("North Indian Classic"), UR-28.
+        'thali_name': draft.name,
         'items': itemEvidence,
         'calculation_version': kNutritionThaliCalculationVersion,
         'nutrient_registry_version': _registry.version,

@@ -266,6 +266,12 @@ class OnboardingNumberInputField extends StatelessWidget {
   /// Shown under the field, for example an [OnboardingRulerPicker].
   final Widget? below;
 
+  /// Shown greyed in an empty field: the value used if it stays empty.
+  final String? placeholder;
+
+  /// One tap fills an empty field with [placeholder] ("Use 70 kg").
+  final VoidCallback? onUseDefault;
+
   const OnboardingNumberInputField({
     super.key,
     required this.controller,
@@ -282,12 +288,15 @@ class OnboardingNumberInputField extends StatelessWidget {
     this.trailing,
     this.subtitle,
     this.below,
+    this.placeholder,
+    this.onUseDefault,
   });
 
   @override
   Widget build(BuildContext context) {
     final colors = context.b05Colors;
     final hasError = errorText != null;
+    final isEmpty = controller.text.trim().isEmpty;
     final isValid = !hasError && controller.text.isNotEmpty;
     final screenWidth = MediaQuery.sizeOf(context).width;
     final textScale = MediaQuery.textScalerOf(context).scale(1);
@@ -347,6 +356,13 @@ class OnboardingNumberInputField extends StatelessWidget {
                     decoration: InputDecoration(
                       labelText: label,
                       labelStyle: B05Typography.body(context),
+                      hintText: placeholder,
+                      // Greyed, so a placeholder never reads as an answer.
+                      hintStyle: Theme.of(context).textTheme.titleLarge
+                          ?.copyWith(color: colors.textDisabled),
+                      floatingLabelBehavior: placeholder == null
+                          ? null
+                          : FloatingLabelBehavior.always,
                       border: InputBorder.none,
                       enabledBorder: InputBorder.none,
                       focusedBorder: InputBorder.none,
@@ -427,6 +443,17 @@ class OnboardingNumberInputField extends StatelessWidget {
             child: subtitle!,
           ),
         ],
+        if (isEmpty && placeholder != null && onUseDefault != null)
+          Align(
+            alignment: Alignment.centerLeft,
+            // Keyboard Next goes field to field, not through this button.
+            child: ExcludeFocus(
+              child: TextButton(
+                onPressed: onUseDefault,
+                child: Text('Use $placeholder $suffix'),
+              ),
+            ),
+          ),
         if (below != null) ...[
           const SizedBox(height: B05Layout.space8),
           below!,
@@ -520,6 +547,8 @@ class OnboardingHeightInputField extends StatefulWidget {
   final String? errorText;
   final ValueChanged<String>? onChanged;
   final TextInputAction textInputAction;
+  final double? placeholder;
+  final VoidCallback? onUseDefault;
 
   const OnboardingHeightInputField({
     super.key,
@@ -528,6 +557,8 @@ class OnboardingHeightInputField extends StatefulWidget {
     this.errorText,
     this.onChanged,
     this.textInputAction = TextInputAction.next,
+    this.placeholder,
+    this.onUseDefault,
   });
 
   @override
@@ -589,6 +620,7 @@ class _OnboardingHeightInputFieldState
     max: 250,
     step: 1,
     majorEvery: 10,
+    placeholder: widget.placeholder,
     onChanged: (value) {
       final parsed = double.tryParse(value);
       if (parsed != null) _syncFtInFromCm(parsed);
@@ -639,12 +671,16 @@ class _OnboardingHeightInputFieldState
         icon: Icons.height,
         errorText: widget.errorText,
         textInputAction: widget.textInputAction,
-        subtitle: Text(
-          '≈ ${HeightConverter.formatFeetInches(cm)}',
-          style: B05Typography.caption(
-            context,
-          ).copyWith(color: colors.textSecondary),
-        ),
+        placeholder: widget.placeholder?.round().toString(),
+        onUseDefault: widget.onUseDefault,
+        subtitle: widget.controller.text.trim().isEmpty
+            ? null
+            : Text(
+                '≈ ${HeightConverter.formatFeetInches(cm)}',
+                style: B05Typography.caption(
+                  context,
+                ).copyWith(color: colors.textSecondary),
+              ),
         trailing: unitToggle,
         below: _ruler(),
         onChanged: (val) {

@@ -11,6 +11,9 @@ import 'typed_quantities.dart';
 const int kNutritionThaliContractVersion = 1;
 const String kNutritionThaliCalculationVersion = 'b03-13-v1';
 
+/// A new thali's name until a preset or the person names it.
+const String kDefaultThaliName = 'My Thali';
+
 enum NutritionThaliItemSource { food, recipe }
 
 extension NutritionThaliItemSourceContract on NutritionThaliItemSource {

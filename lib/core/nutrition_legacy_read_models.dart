@@ -1,6 +1,7 @@
 import 'nutrients.dart';
 import 'nutrition_consumption_snapshots.dart';
 import 'nutrition_estimates.dart';
+import 'nutrition_thali.dart';
 import 'typed_quantities.dart';
 
 /// Stable source labels used by the unified historical read boundary.
@@ -295,6 +296,7 @@ class NutritionCanonicalSnapshotReadModel
     if (items.length == 1 && items.single.displayLabel != null) {
       return items.single.displayLabel!;
     }
+    if (_thaliNameFromSnapshot(snapshot) case final name?) return name;
     final kind = snapshot.thaliId != null
         ? 'Thali'
         : snapshot.recipeVersionId != null
@@ -375,6 +377,18 @@ class NutritionCanonicalSnapshotReadModel
   NutritionEstimateEvidence? get estimateEvidence {
     return _estimateEvidenceFromSnapshot(snapshot);
   }
+}
+
+/// The template or user name a thali was logged under (UR-28); null for
+/// older logs and for the default "My Thali", which keep "Thali (5 items)".
+String? _thaliNameFromSnapshot(NutritionConsumptionSnapshot snapshot) {
+  if (snapshot.thaliId == null) return null;
+  final requestEvidence = snapshot.lineage.evidence['request_evidence'];
+  if (requestEvidence is! Map) return null;
+  final name = requestEvidence['thali_name'];
+  if (name is! String) return null;
+  final trimmed = name.trim();
+  return trimmed.isEmpty || trimmed == kDefaultThaliName ? null : trimmed;
 }
 
 String? _estimateVersionFromSnapshot(NutritionConsumptionSnapshot snapshot) {

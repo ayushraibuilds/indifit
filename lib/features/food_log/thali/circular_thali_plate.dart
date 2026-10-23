@@ -272,6 +272,21 @@ double thaliKatoriFill(Quantity quantity) {
   return level.clamp(0.35, 1.0);
 }
 
+/// Plates smaller than this show no katori names: the labels would drop
+/// below 11 pt or run into each other.
+const double kThaliPlateLabelMinDiameter = 300;
+
+/// A katori's name in a word or two (UR-28): "Whole Wheat Roti / Chapati" is
+/// "Whole Wheat", "Jeera Rice" stays whole; the label ellipsises the rest.
+String thaliKatoriShortLabel(String name) {
+  final base = name.split(RegExp(r'\s*[/(,]')).first.trim();
+  if (base.isEmpty) return name.trim();
+  if (base.length <= 12) return base;
+  final words = base.split(RegExp(r'\s+'));
+  final two = words.take(2).join(' ');
+  return two.length <= 12 ? two : words.first;
+}
+
 class _PlateBody extends StatelessWidget {
   const _PlateBody({
     required this.diameter,
@@ -351,6 +366,38 @@ class _PlateBody extends StatelessWidget {
             onSelectItem: onSelectItem,
           ),
         ),
+        // A short name under each katori (UR-28), once the plate is big
+        // enough for 11 pt text to fit between the bowls.
+        if (diameter >= kThaliPlateLabelMinDiameter)
+          for (final slot in layout.perimeterSlots)
+            if (slot case ThaliItemSlot(:final item, :final placement))
+              AnimatedPositioned(
+                key: ValueKey('label:${_slotKey(slot)}'),
+                duration: glide,
+                curve: B05MotionPolicy.standardCurve,
+                left:
+                    diameter / 2 + orbit * math.cos(slot.angle) - katori * 0.7,
+                top: diameter / 2 + orbit * math.sin(slot.angle) + katori / 2,
+                width: katori * 1.4,
+                child: IgnorePointer(
+                  child: ExcludeSemantics(
+                    child: Text(
+                      thaliKatoriShortLabel(
+                        item.displayLabel ?? placement.categoryLabel,
+                      ),
+                      key: Key('thali_plate_label_${item.id}'),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: B05Typography.caption(context).copyWith(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
         for (final slot in layout.perimeterSlots)
           AnimatedPositioned(
             key: ValueKey(_slotKey(slot)),

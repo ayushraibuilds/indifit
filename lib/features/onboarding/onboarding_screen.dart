@@ -55,10 +55,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   static const _goalPage = 0;
   static const _aboutPage = 1;
 
+  // Used while a field is left empty (UR-25): shown as placeholders, never
+  // as answers, and named on the review as "Not set: using 70 kg".
+  static const _defaultAge = 25;
+  static const _defaultHeight = 170.0;
+  static const _defaultWeight = 70.0;
+
   // Onboarding parameters
-  int _age = 25;
-  double _height = 170.0;
-  double _weight = 70.0;
+  int _age = _defaultAge;
+  double _height = _defaultHeight;
+  double _weight = _defaultWeight;
   String? _sex; // Nullable for explicit selection requirement (Item 3.3)
   String _activityLevel =
       'moderate'; // 'sedentary', 'light', 'moderate', 'active'
@@ -68,18 +74,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   // Input controllers
   final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _ageController = TextEditingController(
-    text: '25',
-  );
-  final TextEditingController _heightController = TextEditingController(
-    text: '170',
-  );
-  final TextEditingController _weightController = TextEditingController(
-    text: '70',
-  );
-  final TextEditingController _targetWeightController = TextEditingController(
-    text: '70',
-  );
+  final TextEditingController _ageController = TextEditingController();
+  final TextEditingController _heightController = TextEditingController();
+  final TextEditingController _weightController = TextEditingController();
+  final TextEditingController _targetWeightController = TextEditingController();
   final FocusNode _nameFocusNode = FocusNode(debugLabel: 'onboarding-name');
   final FocusNode _ageFocusNode = FocusNode(debugLabel: 'onboarding-age');
   final FocusNode _heightFocusNode = FocusNode(debugLabel: 'onboarding-height');
@@ -359,7 +357,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   void _validateAge() {
     final v = int.tryParse(_ageController.text);
     setState(() {
-      if (v == null || v < 10 || v > 120) {
+      if (_ageController.text.trim().isEmpty) {
+        _ageError = null;
+      } else if (v == null || v < 10 || v > 120) {
         _ageError = 'Enter age between 10 and 120.';
       } else {
         _ageError = null;
@@ -370,7 +370,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   void _validateHeight() {
     final v = double.tryParse(_heightController.text);
     setState(() {
-      if (v == null || v < 80 || v > 250) {
+      if (_heightController.text.trim().isEmpty) {
+        _heightError = null;
+      } else if (v == null || v < 80 || v > 250) {
         _heightError = 'Enter height between 80 and 250 cm.';
       } else {
         _heightError = null;
@@ -381,7 +383,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   void _validateWeight() {
     final v = double.tryParse(_weightController.text);
     setState(() {
-      if (v == null || v < 25 || v > 350) {
+      if (_weightController.text.trim().isEmpty) {
+        _weightError = null;
+      } else if (v == null || v < 25 || v > 350) {
         _weightError = 'Enter weight between 25 and 350 kg.';
       } else {
         _weightError = null;
@@ -436,6 +440,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text(_weightError!)));
       return;
+    } else if (_currentPage == _aboutPage &&
+        _unsetAbout.isNotEmpty &&
+        !_defaultsAccepted) {
+      unawaited(_askToSetAbout());
+      return;
     }
 
     unawaited(_saveDraftLogged());
@@ -461,6 +470,83 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     } else {
       _completeOnboarding();
     }
+  }
+
+  /// The About answers still empty, as "Age", "Height", "Weight".
+  List<String> get _unsetAbout => [
+    if (_ageController.text.trim().isEmpty) 'Age',
+    if (_heightController.text.trim().isEmpty) 'Height',
+    if (_weightController.text.trim().isEmpty) 'Weight',
+  ];
+
+  /// Set once the person chooses to go on with the usual values.
+  var _defaultsAccepted = false;
+
+  /// "Next step" with empty answers asks to set them; Skip goes on with the
+  /// usual values, which the review then names (UR-25).
+  Future<void> _askToSetAbout() async {
+    final unset = _unsetAbout;
+    final skip = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Set your details?'),
+        content: Text(
+          'Your target is worked out from your age, height and weight. '
+          'Not set yet: ${unset.join(', ').toLowerCase()}.',
+        ),
+        actions: [
+          TextButton(
+            key: const Key('onboarding_about_skip_defaults'),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Skip'),
+          ),
+          FilledButton(
+            key: const Key('onboarding_about_set_details'),
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Set them'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted) return;
+    if (skip == true) {
+      _defaultsAccepted = true;
+      _nextPage();
+      return;
+    }
+    final first = unset.first;
+    (first == 'Age'
+            ? _ageFocusNode
+            : first == 'Height'
+            ? _heightFocusNode
+            : _weightFocusNode)
+        .requestFocus();
+  }
+
+  void _useDefault(TextEditingController controller, String value) {
+    controller.text = value;
+    unawaited(_saveDraftLogged());
+    setState(() {});
+  }
+
+  /// The target weight used while none is set: 10 % down to lose, 5 % up to
+  /// gain, else the current weight (UR-25 shows it as "Not set").
+  double _derivedTargetWeight() {
+    final weight = double.tryParse(_weightController.text) ?? _defaultWeight;
+    return switch (_goal) {
+      'lose' => (weight * 0.9).roundToDouble(),
+      'gain' => (weight * 1.05).roundToDouble(),
+      _ => weight,
+    };
+  }
+
+  String _formatKg(double kg) =>
+      kg == kg.roundToDouble() ? '${kg.round()}' : kg.toStringAsFixed(1);
+
+  /// "25 years", or "Not set: using 25 years" while the field is empty.
+  String _aboutValue(TextEditingController controller, String fallback) {
+    final text = controller.text.trim();
+    return text.isEmpty ? 'Not set: using $fallback' : text;
   }
 
   void _prevPage() {
@@ -550,9 +636,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Future<void> _completeOnboardingOnce() async {
     // Parse final text controllers
-    _age = int.tryParse(_ageController.text) ?? 25;
-    _height = double.tryParse(_heightController.text) ?? 170.0;
-    _weight = double.tryParse(_weightController.text) ?? 70.0;
+    _age = int.tryParse(_ageController.text) ?? _defaultAge;
+    _height = double.tryParse(_heightController.text) ?? _defaultHeight;
+    _weight = double.tryParse(_weightController.text) ?? _defaultWeight;
     _targetWeight = double.tryParse(_targetWeightController.text) ?? _weight;
 
     final macros = _currentNutritionTargets();
@@ -584,15 +670,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     // Store user parameters. Target weight is derived only when the user did
     // not provide one in the legacy draft; it is not a required setup step.
     final explicitTarget = double.tryParse(_targetWeightController.text.trim());
-    if (explicitTarget != null && explicitTarget > 0) {
-      _targetWeight = explicitTarget;
-    } else {
-      _targetWeight = switch (_goal) {
-        'lose' => (_weight * 0.9).roundToDouble(),
-        'gain' => (_weight * 1.05).roundToDouble(),
-        _ => _weight,
-      };
-    }
+    _targetWeight = explicitTarget != null && explicitTarget > 0
+        ? explicitTarget
+        : _derivedTargetWeight();
 
     // Store user parameters
     if (_nameController.text.trim().isNotEmpty) {
@@ -1040,8 +1120,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     suffix: 'years',
                     icon: Icons.calendar_today,
                     errorText: _ageError,
+                    placeholder: '$_defaultAge',
+                    onUseDefault: () =>
+                        _useDefault(_ageController, '$_defaultAge'),
                     onStepDown: () {
-                      final current = int.tryParse(_ageController.text) ?? 25;
+                      final current =
+                          int.tryParse(_ageController.text) ?? _defaultAge;
                       if (current > 10) {
                         _ageController.text = '${current - 1}';
                         _validateAge();
@@ -1049,7 +1133,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       }
                     },
                     onStepUp: () {
-                      final current = int.tryParse(_ageController.text) ?? 25;
+                      final current =
+                          int.tryParse(_ageController.text) ?? _defaultAge;
                       if (current < 120) {
                         _ageController.text = '${current + 1}';
                         _validateAge();
@@ -1067,6 +1152,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     controller: _heightController,
                     focusNode: _heightFocusNode,
                     errorText: _heightError,
+                    placeholder: _defaultHeight,
+                    onUseDefault: () => _useDefault(
+                      _heightController,
+                      '${_defaultHeight.round()}',
+                    ),
                     onChanged: (_) => unawaited(_saveDraftLogged()),
                     textInputAction: TextInputAction.next,
                   ),
@@ -1081,8 +1171,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     suffix: 'kg',
                     icon: Icons.scale,
                     errorText: _weightError,
+                    placeholder: '${_defaultWeight.round()}',
+                    onUseDefault: () => _useDefault(
+                      _weightController,
+                      '${_defaultWeight.round()}',
+                    ),
                     below: OnboardingRulerPicker(
                       controller: _weightController,
+                      placeholder: _defaultWeight,
                       label: 'Current weight',
                       unit: 'kg',
                       min: 25,
@@ -1135,8 +1231,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           const SizedBox(height: B05Layout.space12),
           _buildPayoffFact(
             label: 'Profile details',
-            value:
-                '${_ageController.text.trim()} years · ${_heightController.text.trim()} cm · ${_weightController.text.trim()} kg',
+            value: [
+              '${_aboutValue(_ageController, '$_defaultAge')} years',
+              '${_aboutValue(_heightController, '${_defaultHeight.round()}')} cm',
+              '${_aboutValue(_weightController, '${_defaultWeight.round()}')} kg',
+              'Target ${_aboutValue(_targetWeightController, _formatKg(_derivedTargetWeight()))} kg',
+            ].join(' · '),
             icon: Icons.person_outline_rounded,
             page: _aboutPage,
             hint: 'Change your profile details.',
