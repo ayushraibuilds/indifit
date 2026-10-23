@@ -117,7 +117,7 @@ void main() {
     }
   });
 
-  testWidgets('Log food remains available while Meal Ideas is gated', (
+  testWidgets('Log food and What can I eat? show without coaching ideas', (
     tester,
   ) async {
     final selectedDate = DateTime(2026, 8, 7);
@@ -141,7 +141,8 @@ void main() {
     await tester.pump();
 
     expect(find.text('Log food'), findsOneWidget);
-    expect(find.text('What can I eat?'), findsNothing);
+    // TF-2 A: the sheet needs no coaching card.
+    expect(find.text('What can I eat?'), findsOneWidget);
   });
 
   testWidgets('first production load rebuilds when guidance becomes ready', (
@@ -186,7 +187,10 @@ void main() {
 
     expect(controller.loadCount, 1);
     expect(find.text('What can I eat?'), findsOneWidget);
+    // The sheet offers the coaching card's ideas once they are ready.
     await tester.tap(find.text('What can I eat?'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('what_can_i_eat_more_ideas')));
     expect(guidanceOpened, isTrue);
   });
 }
