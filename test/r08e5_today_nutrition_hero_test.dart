@@ -37,7 +37,7 @@ void main() {
   });
 
   testWidgets(
-    'current-date hero shows nutrition actions but gates Meal Ideas without a B04 card',
+    'current-date hero shows nutrition actions and What can I eat? without a B04 card',
     (tester) async {
       final selectedDate = DateTime(2026, 8, 10);
       final daily = _createNutritionDaily(
@@ -95,7 +95,7 @@ void main() {
 
       // Action buttons
       expect(find.text('Log food'), findsOneWidget);
-      expect(find.text('What can I eat?'), findsNothing);
+      expect(find.text('What can I eat?'), findsOneWidget);
       expect(find.text('Targets'), findsOneWidget);
       expect(find.text('Set a target'), findsNothing);
 
@@ -154,7 +154,7 @@ void main() {
 
       // Action buttons
       expect(find.text('Log food'), findsOneWidget);
-      expect(find.text('What can I eat?'), findsNothing);
+      expect(find.text('What can I eat?'), findsOneWidget);
       expect(find.text('Set a target'), findsNothing);
       expect(find.text('Targets'), findsOneWidget);
 
@@ -567,7 +567,7 @@ void main() {
       await tester.pump();
       expect(logFoodCalled, isTrue);
 
-      expect(find.text('What can I eat?'), findsNothing);
+      expect(find.text('What can I eat?'), findsOneWidget);
 
       await tester.tap(find.text('Targets'));
       await tester.pump();

@@ -16,7 +16,9 @@ import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/indi_fit_feedback.dart';
 import '../dashboard/today_consumer_presentation.dart';
 import '../dashboard/today_surface_controller.dart';
+import '../dashboard/what_can_i_eat.dart';
 import '../dashboard/widgets/today_header_widgets.dart';
+import '../dashboard/widgets/what_can_i_eat_sheet.dart';
 import 'canonical_food_actions.dart';
 import 'diary_structure_controller.dart';
 import 'food_log_surface.dart';
@@ -184,6 +186,23 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
                 );
               },
             ),
+            // TF-2 A: what is left today and foods that fit it.
+            if (_isSameDay(_selectedDay, _today))
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  key: const ValueKey('food_diary_what_can_i_eat'),
+                  onPressed: () => unawaited(
+                    showWhatCanIEatSheet(
+                      context,
+                      plan: WhatCanIEat.planFor(presentation),
+                      day: _selectedDay,
+                    ),
+                  ),
+                  icon: const Icon(Icons.lightbulb_outline_rounded, size: 20),
+                  label: const Text('What can I eat?'),
+                ),
+              ),
             const SizedBox(height: 16),
             FoodDiarySummary(
               presentation: presentation,
