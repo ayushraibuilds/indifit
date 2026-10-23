@@ -38,7 +38,6 @@ class AppLogger {
       debugPrint('[WARN]${tag != null ? ' [$tag]' : ''}: $message');
     }
     CrashReportingService.addLogBreadcrumb(
-      message,
       category: tag,
       level: SentryLevel.warning,
     );
@@ -54,12 +53,12 @@ class AppLogger {
       debugPrint('[ERROR]${tag != null ? ' [$tag]' : ''}: $message');
       if (error != null) debugPrint('Error details: $error');
     }
-    // Release builds print nothing, so the line rides along with the next
-    // crash report as a scrubbed breadcrumb; the error object never does.
+    // Release builds print nothing, so the next crash report gets a
+    // breadcrumb: the category, the level and the error's type only.
     CrashReportingService.addLogBreadcrumb(
-      message,
       category: tag,
       level: SentryLevel.error,
+      error: error,
     );
   }
 

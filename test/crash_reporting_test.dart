@@ -187,38 +187,35 @@ void main() {
       expect(crumbs, isEmpty);
     });
 
-    test('error and warning add a category and a scrubbed message', () async {
-      await enable(optIn: true, started: true);
-      AppLogger.error(
-        'Failed to log Paneer Tikka 250g for food-seed-123',
-        StateError('boom'),
-        null,
-        'FoodLog',
-      );
-      AppLogger.warning('Search slow: "masala dosa" took 812 ms', 'Search');
-      AppLogger.info('not a breadcrumb');
+    test(
+      'error and warning add the category, level and error type only',
+      () async {
+        await enable(optIn: true, started: true);
+        AppLogger.error(
+          'Failed to log Paneer Tikka 250g for food-seed-123',
+          StateError('boom'),
+          null,
+          'FoodLog',
+        );
+        AppLogger.error('Save failed: "masala dosa"', null, null, 'FoodLog');
+        AppLogger.warning('Search slow: "masala dosa" took 812 ms', 'Search');
+        AppLogger.info('not a breadcrumb');
 
-      expect(crumbs, hasLength(2));
-      expect(crumbs[0].category, 'FoodLog');
-      expect(crumbs[0].level, SentryLevel.error);
-      expect(crumbs[0].message, 'Failed to log for');
-      expect(crumbs[0].data, isNull);
-      expect(crumbs[1].message, 'Search slow');
-      expect(crumbs[1].level, SentryLevel.warning);
-    });
-
-    test('scrubber drops numbers, ids, quotes and typed text', () {
-      String s(String m) => CrashReportingService.scrubLogMessage(m);
-      expect(s('Weight 72.5 kg saved'), 'Weight kg saved');
-      expect(s('Lookup failed for meal_v2::42'), 'Lookup failed for');
-      expect(s("Couldn't parse 'aloo paratha'"), 'Couldn');
-      expect(s('Sync error = user@example.com'), 'Sync error');
-      expect(s('123 456'), '');
-      expect(
-        s('one two three four five six seven eight nine ten'),
-        'one two three four five six seven eight',
-      );
-    });
+        expect(crumbs, hasLength(3));
+        expect(crumbs[0].category, 'FoodLog');
+        expect(crumbs[0].level, SentryLevel.error);
+        expect(crumbs[0].message, 'StateError');
+        expect(crumbs[0].data, isNull);
+        expect(crumbs[1].message, isNull);
+        expect(crumbs[2].category, 'Search');
+        expect(crumbs[2].level, SentryLevel.warning);
+        expect(crumbs[2].message, isNull);
+        for (final crumb in crumbs) {
+          expect('${crumb.message}', isNot(contains('dosa')));
+          expect('${crumb.message}', isNot(contains('Paneer')));
+        }
+      },
+    );
 
     test('an odd tag falls back to a generic category', () async {
       await enable(optIn: true, started: true);

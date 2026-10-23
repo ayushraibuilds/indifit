@@ -162,43 +162,23 @@ class CrashReportingService {
       Sentry.addBreadcrumb(b);
 
   /// Adds a log line as a breadcrumb so a later crash report shows what led
-  /// up to it. Only while reporting is on and Sentry is running; the message
-  /// is cut down by [scrubLogMessage] first.
-  static void addLogBreadcrumb(
-    String message, {
+  /// up to it. Only while reporting is on and Sentry is running. It carries
+  /// the category, the level and the error's type ("StateError"), never the
+  /// message: log lines quote food names, typed text and numbers.
+  static void addLogBreadcrumb({
     String? category,
     required SentryLevel level,
+    Object? error,
   }) {
     if (!_isEnabled || !_sentryStarted) return;
-    final scrubbed = scrubLogMessage(message);
-    if (scrubbed.isEmpty) return;
     breadcrumbSink(
       Breadcrumb(
-        message: scrubbed,
+        message: error?.runtimeType.toString(),
         category: _scrubCategory(category),
         level: level,
         type: 'debug',
       ),
     );
-  }
-
-  /// Keeps only the fixed wording at the start of a log line. Log messages
-  /// interpolate food names, typed text, numbers and ids, usually after a
-  /// colon, an equals sign, a bracket or a quote, so the line is cut there;
-  /// then any word with a digit or an id-like shape, and any capitalised word
-  /// after the first, is dropped, and the rest is capped at eight words.
-  @visibleForTesting
-  static String scrubLogMessage(String input) {
-    final head = input.split(RegExp(r'''[:=(\[{"'`<>|]''')).first;
-    final kept = <String>[];
-    for (final word in head.split(RegExp(r'\s+'))) {
-      if (word.isEmpty) continue;
-      if (!RegExp(r'^[A-Za-z]+[,;!?]?$').hasMatch(word)) continue;
-      if (kept.isNotEmpty && RegExp(r'[A-Z]').hasMatch(word)) continue;
-      kept.add(word);
-      if (kept.length == 8) break;
-    }
-    return kept.join(' ');
   }
 
   static String _scrubCategory(String? tag) {
