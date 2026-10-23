@@ -6,6 +6,7 @@ import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/nutrition_household_measures.dart';
 import 'package:indifit/core/nutrition_legacy_read_models.dart';
 import 'package:indifit/core/nutrition_thali.dart';
+import 'package:indifit/core/services/local_schedule_date_service.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/core/typed_quantities.dart';
 import 'package:indifit/data/database/app_database.dart'
@@ -267,9 +268,10 @@ void main() {
       addTearDown(() => closeWidgetTestDatabase(tester, c.db));
       final today = DateTime.now();
       final day = DateTime(today.year, today.month, today.day);
-      final localDate =
-          '${day.year}-${day.month.toString().padLeft(2, '0')}-'
-          '${day.day.toString().padLeft(2, '0')}';
+      // The day as the app reads it in the logging timezone (IST), not the
+      // runner's: on a UTC runner after 18:30 they are different dates.
+      final dates = LocalScheduleDateService();
+      final localDate = dates.localDateFor(day, loggedRecordsTimezone);
       final rotiId = (await tester.runAsync(
         () => c.foodId(loggedRecordsRoti),
       ))!;
@@ -296,7 +298,7 @@ void main() {
             quantity: option.defaultLoggingQuantity,
           ),
           mealCategory: 'lunch',
-          loggedAt: DateTime.now().toUtc(),
+          loggedAt: dates.instantForLocalDate(localDate, loggedRecordsTimezone),
           localDate: localDate,
           timezoneId: loggedRecordsTimezone,
           commandId: 'first-roti',
