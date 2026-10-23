@@ -196,6 +196,7 @@ class B02CompactSetTable extends StatelessWidget {
     this.onOpenPlateCalculator,
     this.onCompleteNext,
     this.targetSummary,
+    this.belowInputs,
     this.previousSetLabels = const [],
     this.bestSetKinds = const {},
     this.bestLabel,
@@ -229,6 +230,9 @@ class B02CompactSetTable extends StatelessWidget {
   /// Last-time and suggested-target summary shown under the "Next set"
   /// label, so the suggestion sits beside the fields it fills.
   final Widget? targetSummary;
+
+  /// Under the load and reps fields: the next-set suggestion (UF-12).
+  final Widget? belowInputs;
 
   /// Last session's working sets in order; set N today shows entry N - 1.
   final List<String> previousSetLabels;
@@ -301,6 +305,7 @@ class B02CompactSetTable extends StatelessWidget {
               moreContent: moreContent,
               onOpenPlateCalculator: onOpenPlateCalculator,
               targetSummary: targetSummary,
+              belowInputs: belowInputs,
               previousLabel: nextRow != null || isWarmup
                   ? null
                   : _previousFor(currentSet - 1),
@@ -594,6 +599,7 @@ class _PendingSetEditor extends StatelessWidget {
     required this.moreContent,
     this.onOpenPlateCalculator,
     this.targetSummary,
+    this.belowInputs,
     this.previousLabel,
   });
 
@@ -612,6 +618,7 @@ class _PendingSetEditor extends StatelessWidget {
   final Widget? moreContent;
   final VoidCallback? onOpenPlateCalculator;
   final Widget? targetSummary;
+  final Widget? belowInputs;
   final String? previousLabel;
 
   @override
@@ -692,6 +699,7 @@ class _PendingSetEditor extends StatelessWidget {
               ),
             ],
           ),
+          ?belowInputs,
           ExpansionTile(
             tilePadding: EdgeInsets.zero,
             childrenPadding: EdgeInsets.zero,

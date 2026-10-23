@@ -117,10 +117,12 @@ abstract final class TrainingBests {
   static const toleranceKg = 0.1;
 
   /// Assistance, tempo, paused reps and segments change what a set means.
-  static bool hasTechnique(B02PerformedSet set, {bool segmented = false}) {
-    final technique = set.technique;
-    return segmented ||
-        technique.segments.isNotEmpty ||
+  static bool hasTechnique(B02PerformedSet set, {bool segmented = false}) =>
+      segmented || isTechnique(set.technique);
+
+  /// Whether [technique] holds any of those (also used for prescriptions).
+  static bool isTechnique(B02TechniqueFields technique) {
+    return technique.segments.isNotEmpty ||
         technique.isDropSet ||
         technique.isRestPause ||
         technique.assistanceMode != null ||

@@ -26,6 +26,7 @@ import '../progress/training_bests.dart';
 import '../progress/training_bests_providers.dart';
 import 'b02_previous_performance_integration.dart';
 import 'b02_strength_execution_controller.dart';
+import 'next_set_suggestion.dart';
 import 'quick_workout_screen.dart';
 import 'widgets/b02_compact_set_table.dart';
 import 'widgets/b02_execution_advanced_controls.dart';
@@ -399,6 +400,9 @@ class _B02StrengthPlayerScreenState
                 ),
             bestSetKinds: bests.kindsBySetId,
             bestLabel: bests.label,
+            nextSet: _warmup
+                ? null
+                : _nextSetSuggestion(launch.state, selected, actualExerciseId),
           );
     final primaryLabel = _warmup
         ? 'Log warm-up set'
@@ -566,6 +570,7 @@ class _B02StrengthPlayerScreenState
     List<String> previousSetLabels = const [],
     Map<String, TrainingBestKind> bestSetKinds = const {},
     String? bestLabel,
+    B02NextSetSuggestion? nextSet,
   }) {
     final rpe = int.tryParse(_rpes[selected.id] ?? '');
     final techniqueKey = _pendingTechniqueKey(
@@ -611,6 +616,15 @@ class _B02StrengthPlayerScreenState
       previousSetLabels: previousSetLabels,
       bestSetKinds: bestSetKinds,
       bestLabel: bestLabel,
+      belowInputs: nextSet == null
+          ? null
+          : NextSetSuggestionHint(
+              suggestion: nextSet,
+              loadController: _loadControllerFor(selected),
+              repsController: _repControllerFor(selected),
+              enabled: !ui.isBusy,
+              onApplied: () => _nextSetApplied(selected, nextSet),
+            ),
       // The next planned row's checkmark is the same action as "Log set".
       onCompleteNext:
           _warmup ||
@@ -1107,6 +1121,39 @@ class _B02StrengthPlayerScreenState
         repsController.text.trim().isEmpty) {
       repsController.text = prefill.reps.toString();
     }
+  }
+
+  /// UF-12: the suggestion for [slot] from the exercise history the bests
+  /// already loaded; null until it has loaded.
+  B02NextSetSuggestion? _nextSetSuggestion(
+    B02ExecutionDraftState state,
+    B02StrengthExecutionSlot slot,
+    String? actualExerciseId,
+  ) {
+    final exerciseId = actualExerciseId?.trim();
+    if (exerciseId == null || exerciseId.isEmpty) return null;
+    final history = _bestsHistory[exerciseId];
+    if (history == null) return null;
+    return nextSetSuggestionFor(
+      slot: slot,
+      exerciseName: _actualExerciseName(state, slot),
+      history: history,
+    );
+  }
+
+  /// "Apply" filled the inputs; keep last time's prefill from replacing
+  /// them. The person still logs the set.
+  void _nextSetApplied(
+    B02StrengthExecutionSlot slot,
+    B02NextSetSuggestion suggestion,
+  ) {
+    setState(() {
+      _markInputEdited(slot.id, B02PreviousPerformanceInputField.load);
+      if (suggestion.reps != null) {
+        _markInputEdited(slot.id, B02PreviousPerformanceInputField.reps);
+      }
+    });
+    FocusManager.instance.primaryFocus?.unfocus();
   }
 
   void _applySuggestedTarget(
