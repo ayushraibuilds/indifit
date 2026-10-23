@@ -96,7 +96,35 @@ void main() {
     await tap(tester, 'Vegetarian');
     await tap(tester, 'Review setup');
     expect(
-      find.text('31 years · Not set: using 170 cm · Not set: using 70 kg'),
+      find.text(
+        '31 years · Not set: using 170 cm · Not set: using 70 kg · '
+        'Target Not set: using 70 kg',
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('target weight starts untouched and follows the goal', (
+    tester,
+  ) async {
+    await pumpAbout(tester);
+    await tester.enterText(
+      find.byWidgetPredicate(
+        (w) => w is TextField && w.decoration?.labelText == 'Current weight',
+      ),
+      '80',
+    );
+    await tap(tester, 'Male');
+    await tap(tester, 'Next step');
+    await tester.tap(find.byKey(const Key('onboarding_about_skip_defaults')));
+    await tester.pumpAndSettle();
+    await tap(tester, 'Moderately active');
+    await tap(tester, 'Next step');
+    await tap(tester, 'Vegetarian');
+    await tap(tester, 'Review setup');
+    // Maintain (the default goal) keeps the current weight.
+    expect(
+      find.textContaining('80 kg · Target Not set: using 80 kg'),
       findsOneWidget,
     );
   });

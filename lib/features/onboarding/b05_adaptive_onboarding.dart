@@ -338,7 +338,7 @@ class B05OnboardingDraftStore {
       activityLevel: normalizeActivity(prefs.getString(_profileActivityKey)),
       goal: normalizeProfileGoal(prefs.getString(_profileGoalKey)),
       targetWeight: _bounded(
-        prefs.getString(_profileTargetWeightKey) ?? '70',
+        prefs.getString(_profileTargetWeightKey) ?? '',
         maxLength: 16,
       ),
       dietPreference: normalizeDiet(prefs.getString(_profileDietKey)),

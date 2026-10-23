@@ -77,9 +77,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final TextEditingController _ageController = TextEditingController();
   final TextEditingController _heightController = TextEditingController();
   final TextEditingController _weightController = TextEditingController();
-  final TextEditingController _targetWeightController = TextEditingController(
-    text: '70',
-  );
+  final TextEditingController _targetWeightController = TextEditingController();
   final FocusNode _nameFocusNode = FocusNode(debugLabel: 'onboarding-name');
   final FocusNode _ageFocusNode = FocusNode(debugLabel: 'onboarding-age');
   final FocusNode _heightFocusNode = FocusNode(debugLabel: 'onboarding-height');
@@ -531,6 +529,20 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     setState(() {});
   }
 
+  /// The target weight used while none is set: 10 % down to lose, 5 % up to
+  /// gain, else the current weight (UR-25 shows it as "Not set").
+  double _derivedTargetWeight() {
+    final weight = double.tryParse(_weightController.text) ?? _defaultWeight;
+    return switch (_goal) {
+      'lose' => (weight * 0.9).roundToDouble(),
+      'gain' => (weight * 1.05).roundToDouble(),
+      _ => weight,
+    };
+  }
+
+  String _formatKg(double kg) =>
+      kg == kg.roundToDouble() ? '${kg.round()}' : kg.toStringAsFixed(1);
+
   /// "25 years", or "Not set: using 25 years" while the field is empty.
   String _aboutValue(TextEditingController controller, String fallback) {
     final text = controller.text.trim();
@@ -658,15 +670,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     // Store user parameters. Target weight is derived only when the user did
     // not provide one in the legacy draft; it is not a required setup step.
     final explicitTarget = double.tryParse(_targetWeightController.text.trim());
-    if (explicitTarget != null && explicitTarget > 0) {
-      _targetWeight = explicitTarget;
-    } else {
-      _targetWeight = switch (_goal) {
-        'lose' => (_weight * 0.9).roundToDouble(),
-        'gain' => (_weight * 1.05).roundToDouble(),
-        _ => _weight,
-      };
-    }
+    _targetWeight = explicitTarget != null && explicitTarget > 0
+        ? explicitTarget
+        : _derivedTargetWeight();
 
     // Store user parameters
     if (_nameController.text.trim().isNotEmpty) {
@@ -1229,6 +1235,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               '${_aboutValue(_ageController, '$_defaultAge')} years',
               '${_aboutValue(_heightController, '${_defaultHeight.round()}')} cm',
               '${_aboutValue(_weightController, '${_defaultWeight.round()}')} kg',
+              'Target ${_aboutValue(_targetWeightController, _formatKg(_derivedTargetWeight()))} kg',
             ].join(' · '),
             icon: Icons.person_outline_rounded,
             page: _aboutPage,
