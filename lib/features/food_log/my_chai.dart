@@ -308,6 +308,24 @@ final myChaiSettingsProvider = Provider<MyChaiSettings?>((ref) {
   return prefs == null ? null : MyChaiSettings.read(prefs);
 });
 
+/// Whether "+ Chai" fits [diet] (R-10): My chai is made with dairy milk,
+/// so a vegan diet isn't offered it.
+bool myChaiFitsDiet(String? diet) => diet?.trim().toLowerCase() != 'vegan';
+
+/// The My chai that "+ Chai" logs on Today and in search: the saved chai
+/// when it fits the person's diet, else null.
+final offeredMyChaiProvider = Provider<MyChaiSettings?>((ref) {
+  final chai = ref.watch(myChaiSettingsProvider);
+  if (chai == null) return null;
+  String? diet;
+  try {
+    diet = ref.watch(userProfileProvider).dietPreference;
+  } catch (_) {
+    // Safe: without a profile the diet is unknown and the chai is offered.
+  }
+  return myChaiFitsDiet(diet) ? chai : null;
+});
+
 final myChaiRecipeProvider = FutureProvider<MyChaiRecipe>(
   (ref) async => MyChaiRecipe(
     recipes: ref.watch(nutritionRecipeRepositoryProvider),

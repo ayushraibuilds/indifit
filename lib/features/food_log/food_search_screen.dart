@@ -1797,7 +1797,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
 
   Widget _buildStapleChips() {
     final staples = _getStapleSuggestions();
-    final chai = ref.watch(myChaiSettingsProvider);
+    final chai = ref.watch(offeredMyChaiProvider);
     final roti = ref.watch(myRotiProvider);
     final mealType = _activeMealType;
     final chaiFirst =

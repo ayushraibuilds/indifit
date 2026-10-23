@@ -104,7 +104,7 @@ class _TodayMealQuickAddsState extends ConsumerState<TodayMealQuickAdds> {
   @override
   Widget build(BuildContext context) {
     final chai = UsualMealFinder.slotOf(widget.mealType) == 'snack'
-        ? ref.watch(myChaiSettingsProvider)
+        ? ref.watch(offeredMyChaiProvider)
         : null;
     final records = widget.mealLogged
         ? ref.watch(canonicalFoodRecordsForDayProvider(_day)).valueOrNull
