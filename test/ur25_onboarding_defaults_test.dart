@@ -50,6 +50,11 @@ void main() {
     ]) {
       expect(field(tester, label).controller!.text, '', reason: label);
       expect(field(tester, label).decoration!.hintText, hint, reason: label);
+      expect(
+        field(tester, label).decoration!.hintStyle?.color,
+        isNot(field(tester, label).style?.color),
+        reason: '$label placeholder is greyed',
+      );
     }
     expect(find.byIcon(Icons.check_circle_rounded), findsNothing);
     expect(find.text('Use 70 kg'), findsOneWidget);

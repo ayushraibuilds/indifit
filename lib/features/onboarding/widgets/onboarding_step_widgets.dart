@@ -357,6 +357,9 @@ class OnboardingNumberInputField extends StatelessWidget {
                       labelText: label,
                       labelStyle: B05Typography.body(context),
                       hintText: placeholder,
+                      // Greyed, so a placeholder never reads as an answer.
+                      hintStyle: Theme.of(context).textTheme.titleLarge
+                          ?.copyWith(color: colors.textDisabled),
                       floatingLabelBehavior: placeholder == null
                           ? null
                           : FloatingLabelBehavior.always,
