@@ -506,6 +506,39 @@ class NutritionConsumptionRepository {
     return Future.wait(rows.map((row) => _readSnapshot(row.id, userId)));
   }
 
+  /// The local dates from [fromLocalDate] to [toLocalDate] (inclusive,
+  /// "yyyy-MM-dd") with at least one active snapshot, by the same rule as
+  /// [dailyTotals]: superseded snapshots and retractions don't count. One
+  /// read for a month of day dots (U-9).
+  Future<Set<String>> activeLocalDates({
+    required String userId,
+    required String fromLocalDate,
+    required String toLocalDate,
+  }) async {
+    final rows = await (_db.select(
+      _db.nutritionConsumptionSnapshots,
+    )..where((table) => table.userId.equals(userId))).get();
+    final superseded = <String>{};
+    final retractions = <String>{};
+    for (final row in rows) {
+      final raw = row.lineage;
+      if (raw == null) continue;
+      final lineage = _parsePersistedLineage(raw);
+      final predecessor = lineage.supersedesSnapshotId;
+      if (predecessor != null) superseded.add(predecessor);
+      if (lineage.isRetraction) retractions.add(row.id);
+    }
+    return {
+      for (final row in rows)
+        if (row.localDate case final date?)
+          if (date.compareTo(fromLocalDate) >= 0 &&
+              date.compareTo(toLocalDate) <= 0 &&
+              !superseded.contains(row.id) &&
+              !retractions.contains(row.id))
+            date,
+    };
+  }
+
   /// Aggregates only active immutable snapshots. It never consults current
   /// foods, recipes, transformations, or vessel calibrations.
   Future<NutritionDailySnapshotTotals> dailyTotals({

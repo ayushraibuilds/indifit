@@ -14,6 +14,7 @@ import '../../core/typed_quantities.dart';
 import '../../core/utils/app_logger.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/indi_fit_feedback.dart';
+import '../dashboard/day_marks.dart';
 import '../dashboard/today_consumer_presentation.dart';
 import '../dashboard/today_surface_controller.dart';
 import '../dashboard/widgets/today_header_widgets.dart';
@@ -128,11 +129,11 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
             tooltip: 'Pick a day',
             icon: const Icon(Icons.calendar_month_rounded),
             onPressed: () async {
-              final picked = await showDatePicker(
-                context: context,
-                initialDate: _selectedDay,
-                firstDate: DateTime(2020),
-                lastDate: _today,
+              final picked = await pickDiaryDay(
+                context,
+                initialDay: _selectedDay,
+                lastDay: _today,
+                today: _today,
               );
               if (picked == null || !mounted) return;
               setState(() => _selectedDay = _civilDay(picked));
