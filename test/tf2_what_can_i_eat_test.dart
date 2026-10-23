@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/nutrition_household_measures.dart';
+import 'package:indifit/core/services/local_schedule_date_service.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/core/typed_quantities.dart';
 import 'package:indifit/data/repositories/nutrition_read_model_repository.dart';
@@ -234,11 +235,12 @@ void main() {
         registry: c.registry,
         canonicalRepository: c.consumption,
       );
-      final now = DateTime.now();
-      final localDate =
-          '${now.year.toString().padLeft(4, '0')}-'
-          '${now.month.toString().padLeft(2, '0')}-'
-          '${now.day.toString().padLeft(2, '0')}';
+      // The add logs on today's date in the logging timezone (IST), which
+      // on a UTC runner after 18:30 is not the runner's date.
+      final localDate = LocalScheduleDateService().localDateFor(
+        DateTime.now(),
+        loggedRecordsTimezone,
+      );
       Future<int> loggedToday() async => (await readModels.dailyTotals(
         userId: kLocalNutritionUserScopeId,
         localDate: localDate,
