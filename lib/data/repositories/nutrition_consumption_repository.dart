@@ -418,6 +418,80 @@ class NutritionConsumptionRepository {
     );
   }
 
+  /// Logs [snapshotId] again as it was logged, into [mealCategory] on
+  /// [localDate] (UF-6 copy). The items keep their frozen facts, so an AI
+  /// estimate stays an estimate and nothing is recalculated from today's
+  /// catalogue; the source type, thali and recipe version carry over. It is
+  /// a new, independent consumption: deleting either leaves the other.
+  Future<NutritionConsumptionSnapshot> copyConsumption({
+    required String userId,
+    required String snapshotId,
+    required String mealCategory,
+    required DateTime loggedAtUtc,
+    required String localDate,
+    required String timezoneId,
+    required String commandId,
+    required String consumptionId,
+  }) async {
+    final source = await getSnapshot(userId: userId, consumptionId: snapshotId);
+    if (source == null || source.isRetraction) {
+      throw const NutritionConsumptionValidationError(
+        'unsupported_copy_source',
+        'Only a logged record can be copied.',
+      );
+    }
+    final requestedNutrients = source.completeness.requestedNutrientIds;
+    final items = <NutritionConsumptionItemInput>[
+      for (var index = 0; index < source.items.length; index++)
+        NutritionConsumptionItemInput(
+          id: '$consumptionId::item::$index',
+          position: index,
+          sourceType: source.items[index].sourceType,
+          foodId: source.items[index].foodId,
+          recipeVersionId: source.items[index].recipeVersionId,
+          preparationId: source.items[index].preparationId,
+          sourceReference: source.items[index].sourceReference,
+          displayLabel: source.items[index].displayLabel,
+          quantity: source.items[index].quantity,
+          calculation: NutritionConsumptionCalculationSnapshot.fromFacts(
+            facts: source.items[index].facts,
+            registry: _registry,
+            requestedNutrientIds: requestedNutrients,
+            calculatorVersion: source.calculatorVersion,
+            calculationFingerprint:
+                'copy::$snapshotId::${source.items[index].id}::${source.lineage.contentFingerprint}',
+            lineage: {
+              'copied_snapshot_id': snapshotId,
+              'copied_item_id': source.items[index].id,
+            },
+          ),
+          evidence: {'copied_item_id': source.items[index].id},
+        ),
+    ];
+    final requestEvidence = source.lineage.evidence['request_evidence'];
+    return finalizeConsumption(
+      NutritionConsumptionFinalizeRequest(
+        userId: userId,
+        consumptionId: consumptionId,
+        commandId: commandId,
+        loggedAtUtc: loggedAtUtc,
+        mealCategory: mealCategory,
+        sourceType: source.sourceType,
+        recipeVersionId: source.recipeVersionId,
+        thaliId: source.thaliId,
+        localDate: localDate,
+        timezoneId: timezoneId,
+        calculatorVersion: source.calculatorVersion,
+        items: items,
+        evidence: {
+          if (requestEvidence is Map)
+            ...Map<String, dynamic>.from(requestEvidence),
+          'copied_from_snapshot_id': snapshotId,
+        },
+      ),
+    );
+  }
+
   Future<NutritionConsumptionSnapshot?> getSnapshot({
     required String userId,
     required String consumptionId,

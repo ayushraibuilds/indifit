@@ -9,6 +9,7 @@ import '../../core/nutrition_thali.dart';
 import '../../core/services/local_schedule_date_service.dart';
 import '../../core/typed_quantities.dart';
 import '../../core/utils/app_logger.dart';
+import '../../data/repositories/nutrition_consumption_repository.dart';
 import '../../data/repositories/nutrition_food_catalog_repository.dart';
 import '../../data/repositories/nutrition_food_logging_coordinator.dart';
 import '../../data/repositories/nutrition_recipe_log_coordinator.dart';
@@ -67,13 +68,19 @@ class RepeatPlan {
   final List<RepeatThali> thalis;
   final List<RepeatRecipe> recipes;
 
+  /// Records logged again exactly as they were (AI estimates, quick adds);
+  /// only a copy (UF-6) plans these.
+  final List<NutritionConsumptionSnapshot> copies;
+
   const RepeatPlan({
     required this.foods,
     required this.thalis,
     required this.recipes,
+    this.copies = const [],
   });
 
-  bool get isEmpty => foods.isEmpty && thalis.isEmpty && recipes.isEmpty;
+  bool get isEmpty =>
+      foods.isEmpty && thalis.isEmpty && recipes.isEmpty && copies.isEmpty;
 
   /// Names for the card: foods, each thali's items, recipes.
   List<String> get names => [
@@ -85,15 +92,21 @@ class RepeatPlan {
       if (recipe.label?.trim().isNotEmpty == true) recipe.label!.trim(),
   ];
 
-  /// Entries the plan logs: each food, each thali and each recipe once.
-  int get entryCount => foods.length + thalis.length + recipes.length;
+  /// Entries the plan logs: each food, thali, recipe and copy once.
+  int get entryCount =>
+      foods.length + thalis.length + recipes.length + copies.length;
 }
 
 /// Plans a repeat of [records]: single foods as before, plus whole thalis
 /// and recipes, which are logged again through their own flows so they stay
 /// one thali or one recipe in the diary. Estimates and quick-adds are left
-/// out: there is nothing exact to repeat.
-RepeatPlan planRepeat(Iterable<NutritionHistoricalReadRecord> records) {
+/// out: there is nothing exact to repeat. With [copyAsLogged] (UF-6 copy)
+/// they are logged again exactly as they were, estimate tag included.
+RepeatPlan planRepeat(
+  Iterable<NutritionHistoricalReadRecord> records, {
+  bool copyAsLogged = false,
+}) {
+  final copies = <NutritionConsumptionSnapshot>[];
   final thalis = <RepeatThali>[];
   final recipes = <RepeatRecipe>[];
   final rest = <NutritionHistoricalReadRecord>[];
@@ -124,12 +137,19 @@ RepeatPlan planRepeat(Iterable<NutritionHistoricalReadRecord> records) {
       recipes.add(recipe);
       continue;
     }
+    if (copyAsLogged &&
+        snapshot != null &&
+        repeatableMealItems([record]).length != record.items.length) {
+      copies.add(snapshot);
+      continue;
+    }
     rest.add(record);
   }
   return RepeatPlan(
     foods: repeatableMealItems(rest),
     thalis: thalis,
     recipes: recipes,
+    copies: copies,
   );
 }
 
@@ -181,6 +201,9 @@ class RepeatOutcome {
   final int foods;
   final int thalis;
   final int recipes;
+
+  /// Entries copied as they were logged (see [RepeatPlan.copies]).
+  final int copied;
   final int skipped;
 
   /// What was logged, so the confirmation can undo it.
@@ -190,11 +213,22 @@ class RepeatOutcome {
     this.foods = 0,
     this.thalis = 0,
     this.recipes = 0,
+    this.copied = 0,
     this.skipped = 0,
     this.snapshots = const [],
   });
 
-  int get logged => foods + thalis + recipes;
+  int get logged => foods + thalis + recipes + copied;
+
+  /// Both outcomes together, for a copy that runs meal by meal.
+  RepeatOutcome operator +(RepeatOutcome other) => RepeatOutcome(
+    foods: foods + other.foods,
+    thalis: thalis + other.thalis,
+    recipes: recipes + other.recipes,
+    copied: copied + other.copied,
+    skipped: skipped + other.skipped,
+    snapshots: List.unmodifiable([...snapshots, ...other.snapshots]),
+  );
 
   /// "2 foods and 1 thali".
   String get loggedLabel {
@@ -203,6 +237,7 @@ class RepeatOutcome {
       if (foods > 0) count(foods, 'food'),
       if (thalis > 0) count(thalis, 'thali'),
       if (recipes > 0) count(recipes, 'recipe'),
+      if (copied > 0) copied == 1 ? '1 other entry' : '$copied other entries',
     ];
     return switch (parts.length) {
       0 => 'nothing',
@@ -228,6 +263,7 @@ Future<RepeatOutcome> logRepeatPlan({
   required NutritionFoodCatalogRepository catalog,
   required NutritionThaliRepository thalis,
   required NutritionRecipeLogCoordinator recipes,
+  NutritionConsumptionRepository? consumption,
   required String userId,
   required String mealCategory,
   required DateTime loggedAtUtc,
@@ -330,21 +366,44 @@ Future<RepeatOutcome> logRepeatPlan({
     snapshots.add(snapshot);
     loggedRecipes++;
   }
+  var copied = 0;
+  for (final source in plan.copies) {
+    if (consumption == null) {
+      skipped++;
+      continue;
+    }
+    snapshots.add(
+      await consumption.copyConsumption(
+        userId: userId,
+        snapshotId: source.id,
+        mealCategory: mealCategory,
+        loggedAtUtc: loggedAtUtc,
+        localDate: localDate,
+        timezoneId: timezoneId,
+        commandId: id(),
+        consumptionId: id(),
+      ),
+    );
+    copied++;
+  }
   return RepeatOutcome(
     foods: loggedFoods,
     thalis: loggedThalis,
     recipes: loggedRecipes,
+    copied: copied,
     skipped: skipped,
     snapshots: List.unmodifiable(snapshots),
   );
 }
 
 /// Repeats [records] into [mealType] on [targetDay] (see [logRepeatPlan]).
+/// With [copyAsLogged] estimates and quick adds come too (UF-6 copy).
 Future<RepeatOutcome> repeatMealRecords(
   WidgetRef ref, {
   required String mealType,
   required Iterable<NutritionHistoricalReadRecord> records,
   required DateTime targetDay,
+  bool copyAsLogged = false,
 }) async {
   final dates = LocalScheduleDateService();
   final timezoneId = await ref
@@ -353,8 +412,11 @@ Future<RepeatOutcome> repeatMealRecords(
   final localDate = dates.localDateFor(targetDay, timezoneId);
   final isToday = localDate == dates.localDateFor(DateTime.now(), timezoneId);
   return logRepeatPlan(
-    plan: planRepeat(records),
+    plan: planRepeat(records, copyAsLogged: copyAsLogged),
     foods: await ref.read(nutritionFoodLoggingCoordinatorProvider.future),
+    consumption: copyAsLogged
+        ? await ref.read(nutritionConsumptionRepositoryProvider.future)
+        : null,
     catalog: await ref.read(nutritionFoodCatalogRepositoryProvider.future),
     thalis: await ref.read(nutritionThaliRepositoryProvider.future),
     recipes: await ref.read(nutritionRecipeLogCoordinatorProvider.future),
