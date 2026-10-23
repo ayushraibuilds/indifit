@@ -15,6 +15,7 @@ import '../../../data/database/app_database.dart';
 import '../../../data/models/b02_execution_models.dart';
 import '../../../data/repositories/exercise_picker_repository.dart';
 import '../../../data/repositories/workout_repository.dart';
+import '../../dashboard/day_marks.dart';
 import '../../exercise_picker/exercise_picker.dart';
 import 'plate_calculator_sheet.dart';
 import 'r07c_workout_presentation.dart';
@@ -121,12 +122,12 @@ class _ManualLogSheetState extends ConsumerState<ManualLogSheet> {
   }
 
   Future<void> _pickDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2000),
-      lastDate: _dateOnly(DateTime.now().add(const Duration(days: 1))),
-      helpText: 'Choose workout date',
+    final picked = await pickDiaryDay(
+      context,
+      initialDay: _selectedDate,
+      firstDay: DateTime(2000),
+      lastDay: _dateOnly(DateTime.now().add(const Duration(days: 1))),
+      title: 'Choose workout date',
     );
     if (!mounted || picked == null) return;
     setState(() => _selectedDate = _dateOnly(picked));

@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
+import '../day_marks.dart';
 
 /// Compact date navigation for the Food diary. It uses civil-day comparisons and only
 /// presents the selected date; timezone semantics remain in the read model.
@@ -75,11 +76,12 @@ class DashboardDateBar extends StatelessWidget {
                           : target.isAfter(lastDate)
                           ? lastDate
                           : target;
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate: initialDate,
-                        firstDate: firstDate,
-                        lastDate: lastDate,
+                      final picked = await pickDiaryDay(
+                        context,
+                        initialDay: initialDate,
+                        firstDay: firstDate,
+                        lastDay: lastDate,
+                        today: todayDay,
                       );
                       if (picked != null) onDateChanged(picked);
                     },

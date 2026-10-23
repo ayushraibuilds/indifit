@@ -11,6 +11,7 @@ import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/consumer_task_primitives.dart';
 import '../../core/widgets/indi_fit_bottom_sheet.dart';
 import '../../data/repositories/calendar_read_repository.dart';
+import '../dashboard/day_marks.dart';
 import 'calendar_controller.dart';
 import 'calendar_read_model.dart';
 import 'occurrence_actions_sheet.dart';
@@ -118,11 +119,12 @@ class _ProgramCalendarScreenState extends ConsumerState<ProgramCalendarScreen> {
   Future<void> _pickDate(BuildContext context) async {
     final state = ref.read(calendarControllerProvider);
     final selected = DateTime.parse('${state.selectedLocalDate}T12:00:00Z');
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: selected,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
+    // Planned workouts can be ahead, so later days stay pickable here.
+    final picked = await pickDiaryDay(
+      context,
+      initialDay: DateTime(selected.year, selected.month, selected.day),
+      firstDay: DateTime(2000),
+      lastDay: DateTime(2100),
     );
     if (picked == null) return;
     await ref

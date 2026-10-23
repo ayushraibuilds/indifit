@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../core/presentation/consumer_date_label.dart';
 import '../../core/presentation/product_failure_presentation.dart';
 import '../../data/models/b02_execution_models.dart';
 import '../../data/repositories/b02_activity_session_repository.dart';
 import '../../data/services/b02_activity_form_service.dart';
+import '../dashboard/day_marks.dart';
 import 'b02_activity_controller.dart';
 
 /// Manual typed-activity flow. Modality-specific validation is delegated to
@@ -440,19 +442,19 @@ class _B02ActivityCreationScreenState
   }
 
   Future<void> _pickDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2000),
-      lastDate: _dateOnly(DateTime.now().add(const Duration(days: 1))),
-      helpText: 'Choose activity date',
+    final picked = await pickDiaryDay(
+      context,
+      initialDay: _selectedDate,
+      firstDay: DateTime(2000),
+      lastDay: _dateOnly(DateTime.now().add(const Duration(days: 1))),
+      title: 'Choose activity date',
     );
     if (!mounted || picked == null) return;
     setState(() => _selectedDate = _dateOnly(picked));
   }
 
-  String _dateLabel() =>
-      MaterialLocalizations.of(context).formatMediumDate(_selectedDate);
+  /// Day first, as everywhere else: "Today", "Thu, 23 Oct".
+  String _dateLabel() => ConsumerDateLabel.dateTime(_selectedDate);
 
   static DateTime _dateOnly(DateTime value) =>
       DateTime(value.year, value.month, value.day);
