@@ -112,7 +112,11 @@ void main() {
               findsNothing,
             );
             expect(find.bySemanticsLabel('Previous day'), findsOneWidget);
-            expect(find.bySemanticsLabel('Next day'), findsOneWidget);
+            // Food dates stop at today (U-9).
+            expect(
+              find.bySemanticsLabel('Later dates unavailable'),
+              findsOneWidget,
+            );
             expect(find.bySemanticsLabel('Selected date'), findsOneWidget);
             expect(
               tester

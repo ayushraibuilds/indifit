@@ -205,6 +205,77 @@ void main() {
     );
   });
 
+  group('food pickers stop at today', () {
+    final now = DateTime.now();
+
+    Future<void> open(WidgetTester tester, Widget home, Finder opener) async {
+      final db = AppDatabase.memory();
+      addTearDown(() => closeWidgetTestDatabase(tester, db));
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [databaseProvider.overrideWithValue(db)],
+          child: MaterialApp(theme: AppTheme.lightTheme, home: home),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(opener);
+      await tester.tap(opener);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('Today header', (tester) async {
+      await open(
+        tester,
+        Scaffold(
+          body: TodayHeader(
+            userName: 'Asha',
+            streakCount: 0,
+            selectedDate: now,
+            referenceNow: now,
+            onOpenSettings: () {},
+            onDateChanged: (_) {},
+          ),
+        ),
+        find.bySemanticsLabel('Choose a date'),
+      );
+      await expectCappedAtToday(tester);
+    });
+
+    testWidgets('Food diary date bar, arrows included', (tester) async {
+      await open(
+        tester,
+        Scaffold(
+          body: DashboardDateBar(selectedDate: now, onDateChanged: (_) {}),
+        ),
+        find.byKey(const ValueKey('dashboard-date-bar-selected-date')),
+      );
+      await expectCappedAtToday(tester);
+      Navigator.of(tester.element(find.byType(IndiFitMonthSheet))).pop();
+      await tester.pumpAndSettle();
+      expect(find.bySemanticsLabel('Later dates unavailable'), findsOneWidget);
+    });
+
+    testWidgets('Food diary', (tester) async {
+      await open(
+        tester,
+        FoodDiaryScreen(selectedDate: now),
+        find.byKey(const ValueKey('food_diary_pick_day')),
+      );
+      await expectCappedAtToday(tester);
+    });
+
+    testWidgets('Quick add (was 30 days ahead)', (tester) async {
+      await open(
+        tester,
+        Scaffold(
+          body: QuickAddMacrosSheet(initialMealType: 'lunch', targetDate: now),
+        ),
+        find.text(DateFormat('d MMM').format(now)),
+      );
+      await expectCappedAtToday(tester);
+    });
+  });
+
   group('each replaced picker returns the picked day', () {
     // The first of this month is always pickable and on the first page.
     final now = DateTime.now();
@@ -362,6 +433,28 @@ void main() {
       expect(controller.selected, iso(first));
     });
   });
+}
+
+/// The month sheet is open on this month with nothing after today: no next
+/// month, and tomorrow (when it is in this month) can't be picked.
+Future<void> expectCappedAtToday(WidgetTester tester) async {
+  expect(find.byKey(const Key('indifit_month_sheet')), findsOneWidget);
+  expect(
+    tester
+        .widget<IconButton>(find.byKey(const Key('indifit_month_next')))
+        .onPressed,
+    isNull,
+  );
+  final now = DateTime.now();
+  final tomorrow = DateTime(now.year, now.month, now.day + 1);
+  if (tomorrow.month != now.month) return;
+  final key =
+      'indifit_month_day_${tomorrow.year.toString().padLeft(4, '0')}-'
+      '${tomorrow.month.toString().padLeft(2, '0')}-'
+      '${tomorrow.day.toString().padLeft(2, '0')}';
+  await tester.tap(find.byKey(ValueKey(key)));
+  await tester.pumpAndSettle();
+  expect(find.byKey(const Key('indifit_month_sheet')), findsOneWidget);
 }
 
 class _CalendarStub extends StateNotifier<CalendarUiState>

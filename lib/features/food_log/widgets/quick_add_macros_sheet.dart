@@ -378,7 +378,8 @@ class _QuickAddMacrosSheetState extends ConsumerState<QuickAddMacrosSheet> {
                       final picked = await pickDiaryDay(
                         context,
                         initialDay: _selectedDate,
-                        lastDay: DateTime.now().add(const Duration(days: 30)),
+                        // Food is logged up to today, never ahead.
+                        lastDay: DateTime.now(),
                         title: 'Log on',
                       );
                       if (picked != null) {

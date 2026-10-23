@@ -304,7 +304,9 @@ class _TodayDateLine extends StatelessWidget {
     DateTime todayDay,
   ) async {
     final firstDate = DateTime(2020);
-    final lastDate = DateTime(todayDay.year + 1, todayDay.month, todayDay.day);
+    // The picker reaches back for diary days and stops at today; later
+    // days stay on the week strip.
+    final lastDate = todayDay;
     final initialDate = selected.isBefore(firstDate)
         ? firstDate
         : selected.isAfter(lastDate)

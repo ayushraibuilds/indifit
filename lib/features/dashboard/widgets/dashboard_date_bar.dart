@@ -25,7 +25,8 @@ class DashboardDateBar extends StatelessWidget {
     final todayDay = _day(now);
     final target = _day(selectedDate);
     final firstDate = DateTime(2020);
-    final lastDate = DateTime(todayDay.year + 1, todayDay.month, todayDay.day);
+    // Food is logged up to today, never ahead.
+    final lastDate = todayDay;
     final canMoveBack = target.isAfter(firstDate);
     final canMoveForward = target.isBefore(lastDate);
     return DecoratedBox(
