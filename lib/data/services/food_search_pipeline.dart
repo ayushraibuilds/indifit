@@ -131,27 +131,31 @@ class FoodSearchPipeline {
     ];
   }
 
-  Future<List<NutritionFoodSearchResult>> rank(String query) async =>
-      NutritionFoodSearchRanking.rank(
-        query: query,
-        candidates: await candidates(query),
-        oneRowPerDish: true,
-      );
+  /// Ranks [query]. [numbersMustMatch] once the amount has been split off
+  /// (R-9); the whole typed text ("2 roti") is ranked without it.
+  Future<List<NutritionFoodSearchResult>> rank(
+    String query, {
+    bool numbersMustMatch = true,
+  }) async => NutritionFoodSearchRanking.rank(
+    query: query,
+    candidates: await candidates(query),
+    oneRowPerDish: true,
+    numbersMustMatch: numbersMustMatch,
+  );
 
   /// Splits the amount off [typed] and picks the words to search.
   ///
   /// A bare number counts as an amount only when the rest still finds a
   /// food and no food is named with the number ("7 Up"). When the whole
-  /// search finds nothing, one word is dropped: the drop whose best match
-  /// is the closest kind of match, then scores highest, then is the rarer
-  /// word; the last word (usually the dish) is kept on a full tie.
+  /// search finds nothing, one word is dropped from the front, keeping the
+  /// last word (the dish); see [dropOneWord].
   Future<ResolvedFoodSearch> resolve(String typed) async {
     final parsed = FoodQueryParser.parse(typed);
     var query = parsed.food;
     var amount = parsed.amount;
     var ranked = <NutritionFoodSearchResult>[];
     if (parsed.bareNumber) {
-      final whole = await rank(parsed.original);
+      final whole = await rank(parsed.original, numbersMustMatch: false);
       final wholeName = NutritionFoodSearchVocabulary.normalize(
         parsed.original,
       );
@@ -234,24 +238,44 @@ class FoodSearchPipeline {
     'healthy',
   };
 
+  /// Last words too general to name the dish on their own: "prawn curry" is
+  /// named by the prawn, so the curry may go and the prawn stays.
+  static const Set<String> _genericDishWords = {
+    'curry',
+    'sabji',
+    'sabzi',
+    'masala',
+    'gravy',
+  };
+
   /// [query] with one word dropped, when that finds a food by name; null
   /// when no drop does.
+  ///
+  /// Fillers go first, then words from the front; the last word, the dish,
+  /// always stays (R-9): "cheese dosa" is a dosa and "fried momos" are
+  /// momos. A search that only finds something without its last word
+  /// ("protein bar" → "protein", "paneer wrap" → "paneer") names another
+  /// food, so it gets no relaxed results and the not-found row offers
+  /// Quick add. A generic last word ([_genericDishWords]) is the exception.
   Future<String?> dropOneWord(String query) async {
     final tokens = NutritionFoodSearchVocabulary.normalize(
       query,
     ).split(' ').where((token) => token.isNotEmpty).toList();
     if (tokens.length < 2) return null;
-    String? best;
-    NutritionFoodSearchResult? bestTop;
-    var bestCount = 0;
-    var bestKeepsLast = false;
-    // Filler words go first; then each word, last word kept longest.
+    final last = tokens.length - 1;
+    final genericLast = _genericDishWords.contains(tokens[last]);
     final order = [
-      for (var i = 0; i < tokens.length; i++)
+      for (var i = 0; i < last; i++)
         if (_fillerWords.contains(tokens[i])) i,
-      for (var i = 0; i < tokens.length; i++)
+      for (var i = 0; i < last; i++)
         if (!_fillerWords.contains(tokens[i])) i,
     ];
+    if (genericLast) {
+      // The generic word alone ("curry") isn't a dish to show.
+      order
+        ..removeWhere((i) => tokens.length == 2 && i != last)
+        ..add(last);
+    }
     for (final index in order) {
       final candidate = [
         for (var i = 0; i < tokens.length; i++)
@@ -267,30 +291,9 @@ class FoodSearchPipeline {
           !_namesFood(ranked.first, candidate)) {
         continue;
       }
-      if (_fillerWords.contains(tokens[index])) return candidate;
-      // A food named by the words left ("Plain Dosa" for "dosa") beats one
-      // that only starts with them ("Cheese Slice" for "cheese"). When both
-      // name a food, the last word is the dish ("cheese dosa" is a dosa).
-      // Then the rarer word wins: "prawn" over "curry".
-      final top = ranked.first;
-      final keepsLast = index != tokens.length - 1;
-      final better =
-          bestTop == null ||
-          top.match.index > bestTop.match.index ||
-          (top.match == bestTop.match &&
-              (keepsLast != bestKeepsLast
-                  ? keepsLast
-                  : top.score > bestTop.score ||
-                        (top.score == bestTop.score &&
-                            ranked.length < bestCount)));
-      if (better) {
-        bestTop = top;
-        bestCount = ranked.length;
-        bestKeepsLast = keepsLast;
-        best = candidate;
-      }
+      return candidate;
     }
-    return best;
+    return null;
   }
 
   /// Resolves [typed] and ranks what it finds.

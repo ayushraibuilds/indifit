@@ -13,6 +13,7 @@ import 'package:indifit/core/services/indifit_haptics.dart';
 import 'package:indifit/core/services/local_timezone_service.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/core/typed_quantities.dart';
+import 'package:indifit/data/catalog/catalogue_quantity_resolver.dart';
 import 'package:indifit/data/database/app_database.dart'
     hide NutritionConsumptionSnapshot;
 import 'package:indifit/data/repositories/food_repository.dart';
@@ -704,6 +705,86 @@ void main() {
         expect(recorder.localDate, '2026-08-24');
         expect(recorder.mealCategory, 'snack');
         expect(recorder.recordedPreview?.quantity.amount.asDouble, 120.0);
+      },
+    );
+
+    testWidgets(
+      'a recent with a household unit says the amount on its button and in the confirmation (R-12)',
+      (tester) async {
+        final harness = await _D3TestHarness.create();
+        final recorder = _RecordingFoodLoggingCoordinator(
+          db: harness.database,
+          registry: harness.registry,
+          catalog: harness.catalog,
+          consumption: harness.consumption,
+        );
+        addTearDown(() async {
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+          unawaited(harness.close());
+        });
+
+        final dahi = await tester.runAsync(
+          () => harness.catalog.ensureProviderFood(
+            displayName: 'Thick Dahi',
+            sourceReference: 'provider-food-thick-dahi-katori',
+            servingSize: 100,
+            servingUnit: 'g',
+            energyKcal: 70,
+            proteinG: 4,
+            carbohydrateG: 5,
+            fatG: 4,
+          ),
+        );
+        final option = dahi!.withMeasure(
+          CatalogueFoodMeasure(
+            foodId: dahi.id,
+            displayName: 'Thick Dahi',
+            basis: 'per_100_grams',
+            unit: 'katori',
+            unitsPerServing: QuantityAmount.one,
+            gramsPerServing: QuantityAmount.fromNum(150),
+            millilitresPerServing: null,
+          ),
+        );
+        final recentItem = CanonicalRecentFood(
+          option: option,
+          quantityLabel: '2 katori (300 g)',
+          loggedAtUtc: DateTime.utc(2026, 8, 12, 7, 30),
+          frequencyCount: 3,
+          historicalQuantity: Quantity.fromDecimal(
+            amount: '300',
+            unit: QuantityUnit.gram,
+          ),
+        );
+
+        await tester.runAsync(harness.close);
+        await tester.pumpWidget(
+          _buildFoodSearch(
+            harness: harness,
+            home: FoodSearchScreen(
+              mealType: 'snack',
+              selectedDate: DateTime(2026, 8, 24),
+            ),
+            recent: [recentItem],
+            coordinator: recorder,
+          ),
+        );
+        await _settleD3(tester);
+
+        // Recent and Frequent both show it, with search's fast-add words.
+        final buttons = find.widgetWithText(TextButton, '2 katori');
+        expect(buttons, findsNWidgets(2));
+        await tester.tap(buttons.first);
+        await _settleD3(tester);
+        await _settleD3(tester);
+
+        expect(
+          find.textContaining(RegExp(r'^Added 2 katori Thick Dahi to Snacks$')),
+          findsOneWidget,
+        );
+        expect(recorder.recordedPreview?.quantity.amount.asDouble, 300.0);
+        await tester.pump(const Duration(seconds: 5));
       },
     );
 

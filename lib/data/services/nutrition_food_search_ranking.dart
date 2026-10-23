@@ -630,14 +630,25 @@ class NutritionFoodSearchRanking {
         const NutritionFoodSearchHistory.empty(),
     int limit = 40,
     bool oneRowPerDish = false,
+    bool numbersMustMatch = false,
   }) {
     final normalizedQuery = NutritionFoodSearchVocabulary.normalize(query);
     if (normalizedQuery.isEmpty) return const [];
     final queryVariants = NutritionFoodSearchVocabulary.expand(normalizedQuery);
     final scored = <NutritionFoodSearchResult>[];
     final seen = <String, NutritionFoodSearchResult>{};
+    final numbers = {
+      if (numbersMustMatch)
+        for (final token in _tokens(normalizedQuery))
+          if (RegExp(r'^\d+$').hasMatch(token)) token,
+    };
 
     for (final candidate in candidates) {
+      // R-9: a number left in the search once the amount is gone ("chicken
+      // 65", "7 up") must be in the food's name; "Chicken Tikka" isn't a near
+      // miss for it. [numbersMustMatch] is only set on that stripped search:
+      // "2 roti" still finds Roti before the amount is split off.
+      if (numbers.isNotEmpty && !_namesNumbers(candidate, numbers)) continue;
       final evaluation = _evaluate(candidate, normalizedQuery, queryVariants);
       if (evaluation.match == NutritionFoodSearchMatch.none) continue;
       final score = _score(candidate, evaluation, normalizedQuery, history);
@@ -982,6 +993,17 @@ class NutritionFoodSearchRanking {
     NutritionFoodSearchSource.legacy => 2,
     NutritionFoodSearchSource.remote => 1,
   };
+
+  static bool _namesNumbers(
+    NutritionFoodSearchCandidate candidate,
+    Set<String> numbers,
+  ) {
+    final words = {
+      for (final name in [candidate.displayName, ...candidate.alternateNames])
+        ..._tokens(NutritionFoodSearchVocabulary.normalize(name)),
+    };
+    return words.containsAll(numbers);
+  }
 
   static List<String> _tokens(String value) => value.isEmpty
       ? const []

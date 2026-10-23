@@ -176,13 +176,24 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   }
 
   /// The amount the row's "+" logs (UR-14): "1 katori", "2 pieces". Null
-  /// when the "+" opens the portion sheet instead.
-  String? _defaultAmountLabel(NutritionFoodOption option) {
+  /// when the "+" opens the portion sheet instead. A Recent or Frequent row
+  /// passes the [quantity] it repeats (R-12).
+  String? _defaultAmountLabel(
+    NutritionFoodOption option, {
+    Quantity? quantity,
+  }) {
     final measure = option.measure;
-    final units = measure?.unitsPerServing?.asDouble;
-    if (!_hasSafeDefaultServing(option) || measure?.unit == null) return null;
+    if (measure?.unit == null) return null;
+    final double? units;
+    if (quantity != null) {
+      if (!_isSafeRepeatQuantity(option, quantity)) return null;
+      units = measure!.pickedHouseholdCount(quantity);
+    } else {
+      if (!_hasSafeDefaultServing(option)) return null;
+      units = measure!.unitsPerServing?.asDouble;
+    }
     if (units == null || units <= 0) return null;
-    return FoodQueryAmount(units).label(servingUnit: measure!.unit);
+    return FoodQueryAmount(units).label(servingUnit: measure.unit);
   }
 
   /// What the "+" logs, in the words on the button: the amount typed with
@@ -456,6 +467,8 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       candidates: candidates,
       history: _searchHistory(),
       oneRowPerDish: true,
+      // [query] has had its amount split off (R-9).
+      numbersMustMatch: true,
     );
     // Online matches arrive after the on-device ones. Keep them below, so the
     // rows already on screen never move under the user's finger.
@@ -633,6 +646,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
             for (final food in local) NutritionFoodSearchCandidate.legacy(food),
           ],
           limit: 1,
+          numbersMustMatch: true,
         ).isEmpty) {
       unawaited(() async {
         final relaxed = await _relaxedSearch(resolved);
@@ -1099,7 +1113,10 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     return false;
   }
 
-  Future<void> _addRecentFast(CanonicalRecentFood recent) async {
+  Future<void> _addRecentFast(
+    CanonicalRecentFood recent, {
+    String? buttonLabel,
+  }) async {
     final option = recent.option;
     if (!_fastAddInFlight.add(option.id)) return;
     if (mounted) setState(() {});
@@ -1141,7 +1158,8 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
         localDate: dateContext.localDate,
         mealCategory: selectedMealType,
       );
-      final amount = option.measure?.pickedAmountLabel(quantity);
+      // The confirmation says what the button said (R-12).
+      final amount = buttonLabel ?? option.measure?.pickedAmountLabel(quantity);
       _rememberLog(
         LoggedSearchItem(
           snapshot: snapshot,
@@ -2231,11 +2249,18 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   Widget _buildCanonicalRecentFastAddAction(CanonicalRecentFood recent) {
     final option = recent.option;
     final isAdding = _fastAddInFlight.contains(option.id);
+    final amountLabel = _defaultAmountLabel(
+      option,
+      quantity: recent.historicalQuantity,
+    );
     return _buildFastAddAction(
       foodName: _consumerFoodName(option.displayName),
+      amountLabel: amountLabel,
       isAdding: isAdding,
       added: _fastAddSucceeded.containsKey(option.id),
-      onPressed: isAdding ? null : () => unawaited(_addRecentFast(recent)),
+      onPressed: isAdding
+          ? null
+          : () => unawaited(_addRecentFast(recent, buttonLabel: amountLabel)),
     );
   }
 
