@@ -1,11 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:indifit/core/di/providers.dart';
+import 'package:indifit/core/nutrition_household_measures.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/core/typed_quantities.dart';
-import 'package:indifit/features/food_log/food_diary_screen.dart';
+import 'package:indifit/data/models/b02_execution_models.dart';
+import 'package:indifit/data/repositories/nutrition_read_model_repository.dart';
+import 'package:indifit/features/dashboard/today_consumer_presentation.dart';
+import 'package:indifit/features/dashboard/today_surface_controller.dart';
+import 'package:indifit/features/dashboard/widgets/today_module_widgets.dart';
+import 'package:indifit/features/food_log/food_search_screen.dart';
+import 'package:indifit/features/food_log/log_confirmation.dart';
+import 'package:indifit/features/food_log/thali/circular_thali_plate.dart';
+import 'package:indifit/features/food_log/thali/thali_builder_screen.dart';
 import 'package:indifit/features/food_log/thali/thali_quantity_label.dart';
-import 'package:indifit/features/food_log/widgets/food_diary_widgets.dart';
+import 'package:indifit/features/progress/training_bests.dart';
+import 'package:indifit/features/progress/weekly_check_in.dart';
+import 'package:indifit/features/progress/weekly_check_in_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/logged_records.dart';
@@ -150,16 +162,52 @@ void main() {
       expect(leaks, isEmpty);
     }
 
-    Future<void> pump(WidgetTester tester, Widget home) async {
-      tester.view.physicalSize = const Size(402, 1800);
+    // A thali, a recipe, an AI estimate and a household-unit food, in one
+    // lunch (LoggedRecords), on every screen that names them.
+    late LoggedRecords logged;
+
+    Future<void> pump(
+      WidgetTester tester,
+      Widget home, {
+      bool realRecents = false,
+      List<Override> extra = const [],
+    }) async {
+      if (tester.view.physicalSize.width != 430) {
+        tester.view.physicalSize = const Size(402, 1800);
+      }
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
       catalogue = (await tester.runAsync(RealCatalogue.open))!;
       addTearDown(() => closeWidgetTestDatabase(tester, catalogue.db));
-      await tester.runAsync(() => LoggedRecords.log(catalogue));
+      logged = (await tester.runAsync(() => LoggedRecords.log(catalogue)))!;
+      if (realRecents) {
+        // A second dal makes it Frequent: only direct foods count.
+        await tester.runAsync(() async {
+          final foods = LoggedRecords.coordinatorFor(catalogue);
+          final option = (await catalogue.catalog.getOption(
+            await catalogue.foodId(loggedRecordsDal),
+          ))!;
+          await foods.finalize(
+            userId: kLocalNutritionUserScopeId,
+            preview: await foods.preview(
+              option: option,
+              quantity: option.defaultLoggingQuantity,
+            ),
+            mealCategory: 'dinner',
+            loggedAt: DateTime.utc(2026, 10, 8, 14),
+            localDate: loggedRecordsDate,
+            timezoneId: loggedRecordsTimezone,
+            commandId: 'fixture-direct-again',
+            consumptionId: 'fixture-direct-again',
+          );
+        });
+      }
       await tester.pumpWidget(
         ProviderScope(
-          overrides: loggedRecordsOverrides(catalogue),
+          overrides: [
+            ...loggedRecordsOverrides(catalogue, realRecents: realRecents),
+            ...extra,
+          ],
           child: MaterialApp(theme: AppTheme.lightTheme, home: home),
         ),
       );
@@ -195,6 +243,176 @@ void main() {
         ),
       );
       expect(find.textContaining('Lunch'), findsWidgets);
+      expectNoInternalText(tester);
+    });
+    testWidgets('Today', (tester) async {
+      await pump(tester, const SizedBox());
+      final daily = (await tester.runAsync(
+        () =>
+            NutritionReadModelRepository(
+              db: catalogue.db,
+              registry: catalogue.registry,
+              canonicalRepository: catalogue.consumption,
+              legacyUserId: kLocalNutritionUserScopeId,
+            ).dailyTotals(
+              userId: kLocalNutritionUserScopeId,
+              localDate: loggedRecordsDate,
+            ),
+      ))!;
+      final meals = TodayNutritionPresentation.from(
+        TodayDomainRead.available(daily),
+        loading: false,
+      ).meals;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: TodayMealsModule(
+                meals: meals,
+                loading: false,
+                unavailable: false,
+                onLogMeal: (_) {},
+                onRetry: () {},
+                selectedDate: DateTime(2026, 10, 8),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(find.textContaining('Lunch'), findsWidgets);
+      expectNoInternalText(tester);
+    });
+
+    testWidgets('search Recents and Frequent', (tester) async {
+      await pump(
+        tester,
+        FoodSearchScreen(
+          mealType: 'lunch',
+          selectedDate: DateTime(2026, 10, 8),
+        ),
+        realRecents: true,
+      );
+      expect(find.text('Recent'), findsWidgets);
+      expect(find.text('Frequent'), findsOneWidget);
+      expectNoInternalText(tester);
+    });
+
+    testWidgets('the log confirmation card', (tester) async {
+      late BuildContext host;
+      await pump(
+        tester,
+        Scaffold(
+          body: Builder(
+            builder: (context) {
+              host = context;
+              return const SizedBox.expand();
+            },
+          ),
+        ),
+      );
+      for (final snapshot in logged.bySource.values) {
+        showFoodLogConfirmation(host, snapshot, onUndo: () {}, haptic: false);
+        await settleLoggedRecords(tester, rounds: 3);
+        expect(find.textContaining('Added'), findsWidgets);
+        expectNoInternalText(tester);
+        ScaffoldMessenger.of(host).removeCurrentSnackBar();
+        await tester.pump(const Duration(seconds: 5));
+      }
+    });
+
+    testWidgets('the thali list and plate', (tester) async {
+      tester.view.physicalSize = const Size(430, 1800);
+      await pump(
+        tester,
+        const SizedBox(),
+        extra: [
+          nutritionThaliRepositoryProvider.overrideWith(
+            (ref) async => catalogue.thali,
+          ),
+        ],
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            ...loggedRecordsOverrides(catalogue),
+            nutritionThaliRepositoryProvider.overrideWith(
+              (ref) async => catalogue.thali,
+            ),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: ThaliBuilderScreen(
+              mealCategory: 'lunch',
+              initialThaliId: logged.bySource['thali']!.thaliId,
+              selectedDate: DateTime(2026, 10, 8),
+            ),
+          ),
+        ),
+      );
+      await settleLoggedRecords(tester, rounds: 10);
+      expect(find.byType(CircularThaliPlate), findsOneWidget);
+      expectNoInternalText(tester);
+      await tester.tap(find.byKey(const Key('thali_view_mode_list')));
+      await settleLoggedRecords(tester);
+      expect(find.textContaining(loggedRecordsRoti), findsWidgets);
+      expectNoInternalText(tester);
+    });
+
+    testWidgets('the weekly check-in', (tester) async {
+      TrainingBest best(String id, String name, double kg) {
+        TrainingBestsSetFact fact(double load) => TrainingBestsSetFact(
+          setId: 'set::$id-$load',
+          exerciseId: id,
+          exerciseName: name,
+          basis: B02LoadBasis.totalExternal,
+          loadKg: load,
+          reps: 5,
+          performedAt: DateTime.utc(2026, 10, 14),
+        );
+        return TrainingBest(
+          kind: TrainingBestKind.heaviest,
+          set: fact(kg),
+          previous: fact(kg - 2.5),
+        );
+      }
+
+      final checkIn = WeeklyCheckIn.build(
+        WeeklyCheckInInputs(
+          weekStart: '2026-10-12',
+          weekEnd: '2026-10-18',
+          workoutLocalDates: const ['2026-10-12', '2026-10-15'],
+          goal: 3,
+          bests: [best('exercise_squat_v2', 'Squat', 80)],
+          proteinByLoggedDay: const {'2026-10-12': 90},
+          weighIns: [
+            CheckInWeighIn(
+              localDate: '2026-10-12',
+              recordedAt: DateTime.utc(2026, 10, 12, 2),
+              weightKg: 72,
+            ),
+          ],
+          nextWeekTrainingDates: const ['2026-10-19'],
+        ),
+      );
+      tester.view.physicalSize = const Size(402, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            weeklyCheckInProvider.overrideWith((ref) async => checkIn),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: const WeeklyCheckInScreen(),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+      expect(find.textContaining('Squat'), findsWidgets);
       expectNoInternalText(tester);
     });
   });
