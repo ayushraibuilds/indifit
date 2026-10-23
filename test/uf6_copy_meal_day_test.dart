@@ -10,6 +10,7 @@ import 'package:indifit/data/repositories/nutrition_read_model_repository.dart';
 import 'package:indifit/features/food_log/copy_meal.dart';
 import 'package:indifit/features/food_log/repeat_meal.dart';
 import 'package:indifit/features/food_log/widgets/food_diary_widgets.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/logged_records.dart';
@@ -187,6 +188,46 @@ void main() {
       after.map((r) => r.mealCategory),
       unorderedEquals(['dinner', ...day.map((r) => r.mealCategory)]),
     );
+  });
+
+  testWidgets('the copy target stops at today', (tester) async {
+    await setUpCatalogue(tester);
+    await tester.runAsync(() => LoggedRecords.log(c, only: {'direct_food'}));
+    final now = DateTime.now();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: overrides(),
+        child: MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: FoodMealDetailScreen(
+            mealType: 'lunch',
+            selectedDate: DateTime(2026, 10, 8),
+          ),
+        ),
+      ),
+    );
+    await settleLoggedRecords(tester);
+    await tester.tap(find.byKey(const ValueKey('meal_page_more')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Copy to another day'));
+    await tester.pumpAndSettle();
+    // Page to this month; there is none after it.
+    final next = find.byKey(const Key('indifit_month_next'));
+    while (tester.widget<IconButton>(next).onPressed != null) {
+      await tester.tap(next);
+      await tester.pumpAndSettle();
+    }
+    expect(find.text(DateFormat('MMMM y').format(now)), findsOneWidget);
+    final tomorrow = DateTime(now.year, now.month, now.day + 1);
+    if (tomorrow.month == now.month) {
+      final iso =
+          '${tomorrow.year}-${tomorrow.month.toString().padLeft(2, '0')}-'
+          '${tomorrow.day.toString().padLeft(2, '0')}';
+      await tester.tap(find.byKey(ValueKey('indifit_month_day_$iso')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('copy_meal_confirm')), findsNothing);
+      expect(find.byKey(const Key('indifit_month_sheet')), findsOneWidget);
+    }
   });
 
   test('the confirmation names the meal, count, kcal and day', () {
