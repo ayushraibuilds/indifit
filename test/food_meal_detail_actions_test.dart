@@ -16,6 +16,7 @@ import 'package:indifit/data/repositories/nutrition_food_logging_coordinator.dar
 import 'package:indifit/data/repositories/nutrition_read_model_repository.dart';
 import 'package:indifit/data/repositories/nutrition_transformation_repository.dart';
 import 'package:indifit/features/food_log/food_search_screen.dart';
+import 'package:indifit/features/food_log/widgets/logged_food_row.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/widget_test_database.dart';
@@ -175,7 +176,13 @@ void main() {
       tester.element(find.byType(FoodMealDetailScreen)),
     )!;
 
-    await tester.tap(find.byIcon(Icons.more_horiz_rounded));
+    // The logged row's "…", not the meal's own menu in the app bar (UF-6).
+    await tester.tap(
+      find.descendant(
+        of: find.byType(LoggedFoodRow),
+        matching: find.byIcon(Icons.more_horiz_rounded),
+      ),
+    );
     await settle();
 
     // The sheet is pushed directly on top of the detail route, on the same
@@ -208,7 +215,12 @@ void main() {
 
     // Delete: the confirmation dialog also sits over the detail screen, and
     // confirming keeps the user there with the food removed.
-    await tester.tap(find.byIcon(Icons.more_horiz_rounded));
+    await tester.tap(
+      find.descendant(
+        of: find.byType(LoggedFoodRow),
+        matching: find.byIcon(Icons.more_horiz_rounded),
+      ),
+    );
     await settle();
     await tester.tap(find.text('Delete food'));
     await settle();

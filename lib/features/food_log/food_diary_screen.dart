@@ -19,6 +19,7 @@ import '../dashboard/today_consumer_presentation.dart';
 import '../dashboard/today_surface_controller.dart';
 import '../dashboard/widgets/today_header_widgets.dart';
 import 'canonical_food_actions.dart';
+import 'copy_meal.dart';
 import 'diary_structure_controller.dart';
 import 'food_log_surface.dart';
 import 'food_search_screen.dart';
@@ -123,6 +124,24 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
         // Same title style as the Training and Progress tabs.
         title: const Text('Food diary'),
         actions: [
+          if (records.isNotEmpty)
+            PopupMenuButton<String>(
+              key: const ValueKey('food_diary_more'),
+              tooltip: 'More for this day',
+              icon: const Icon(Icons.more_horiz_rounded),
+              onSelected: (_) => copyToAnotherDay(
+                context,
+                ref,
+                records: records,
+                sourceDay: _selectedDay,
+              ),
+              itemBuilder: (_) => const [
+                PopupMenuItem(
+                  value: 'copy_day',
+                  child: Text('Copy to another day'),
+                ),
+              ],
+            ),
           // The week strip shows seven days; older days come from here.
           IconButton(
             key: const ValueKey('food_diary_pick_day'),
@@ -281,6 +300,14 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
                                   yesterdayMealRecords,
                                 )
                               : null,
+                          onCopyToDay: () => copyToAnotherDay(
+                            context,
+                            ref,
+                            records: mealRecords,
+                            sourceDay: _selectedDay,
+                            sourceMealType: mealType,
+                            mealTypes: [for (final meal in meals) meal.type],
+                          ),
                           eatAgainItems: eatAgain.isNotEmpty ? eatAgain : null,
                           onFastAdd: (recent) =>
                               _fastAddRecent(mealType, recent),

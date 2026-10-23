@@ -13,6 +13,8 @@ import '../../dashboard/today_consumer_presentation.dart';
 import '../../dashboard/today_surface_controller.dart';
 import '../../dashboard/widgets/today_nutrition_widgets.dart';
 import '../../settings/nutrition_targets_hub_screen.dart';
+import '../copy_meal.dart';
+import '../diary_structure_controller.dart';
 import '../food_log_surface.dart';
 import '../food_search_screen.dart';
 import '../meal_presentation_registry.dart';
@@ -48,7 +50,27 @@ class FoodMealDetailScreen extends ConsumerWidget {
         ? 'Loading meal total'
         : foodDiaryEnergyLabel(mealRecords);
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
+      appBar: AppBar(
+        title: Text(title),
+        actions: [
+          if (mealRecords != null && mealRecords.isNotEmpty)
+            FoodMealMoreMenu(
+              key: const ValueKey('meal_page_more'),
+              label: title,
+              onCopyToDay: () => copyToAnotherDay(
+                context,
+                ref,
+                records: mealRecords,
+                sourceDay: _day,
+                sourceMealType: mealType,
+                mealTypes: [
+                  for (final slot in ref.read(diaryMealSlotsProvider))
+                    slot.stableId,
+                ],
+              ),
+            ),
+        ],
+      ),
       body: SafeArea(
         top: false,
         child: ListView(
@@ -327,6 +349,28 @@ class FoodDiarySummaryMetric extends StatelessWidget {
   );
 }
 
+/// A meal's "…" menu: "Copy to another day" (UF-6).
+class FoodMealMoreMenu extends StatelessWidget {
+  const FoodMealMoreMenu({
+    super.key,
+    required this.label,
+    required this.onCopyToDay,
+  });
+
+  final String label;
+  final VoidCallback onCopyToDay;
+
+  @override
+  Widget build(BuildContext context) => PopupMenuButton<String>(
+    tooltip: 'More for $label',
+    icon: const Icon(Icons.more_horiz_rounded),
+    onSelected: (_) => onCopyToDay(),
+    itemBuilder: (_) => const [
+      PopupMenuItem(value: 'copy', child: Text('Copy to another day')),
+    ],
+  );
+}
+
 class FoodDiaryMealRow extends StatelessWidget {
   const FoodDiaryMealRow({
     super.key,
@@ -336,11 +380,15 @@ class FoodDiaryMealRow extends StatelessWidget {
     required this.onOpen,
     required this.onAdd,
     this.onCopyYesterday,
+    this.onCopyToDay,
     this.eatAgainItems,
     this.onFastAdd,
     this.onRecordActions,
     this.isLoading = false,
   });
+
+  /// "Copy to another day" in the meal's "…" menu (UF-6).
+  final VoidCallback? onCopyToDay;
 
   /// "…" on each logged row: the record-actions entry point (UR-51).
   final ValueChanged<NutritionHistoricalReadRecord>? onRecordActions;
@@ -426,6 +474,12 @@ class FoodDiaryMealRow extends StatelessWidget {
                       onPressed: onCopyYesterday!,
                     ),
                   ],
+                  if (records.isNotEmpty && onCopyToDay != null)
+                    FoodMealMoreMenu(
+                      key: ValueKey('diary_meal_more_$type'),
+                      label: label,
+                      onCopyToDay: onCopyToDay!,
+                    ),
                   const SizedBox(width: 4),
                   B05IconAction(
                     icon: Icons.add_circle_outline_rounded,
