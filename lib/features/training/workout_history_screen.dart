@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/di/providers.dart';
+import '../../core/navigation/app_navigation.dart';
 import '../../core/presentation/consumer_date_label.dart';
 import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/theme/b05_semantic_colors.dart';
@@ -52,10 +53,16 @@ class WorkoutHistoryScreen extends ConsumerWidget {
           ),
         ),
         data: (items) => items.isEmpty
-            ? const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(B05Layout.space24),
-                  child: Text('Complete a workout to start building history.'),
+            ? Padding(
+                padding: const EdgeInsets.all(B05Layout.space20),
+                child: ProductEmptyState(
+                  key: const Key('workout_history_empty'),
+                  icon: Icons.fitness_center_rounded,
+                  title: 'No workouts yet',
+                  message: 'Your finished workouts will show here.',
+                  action: () => goToTrainingTab(context),
+                  actionLabel: 'Start a workout',
+                  actionIcon: Icons.play_arrow_rounded,
                 ),
               )
             : ListView.separated(

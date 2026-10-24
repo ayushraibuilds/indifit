@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/di/providers.dart';
 import '../../core/nutrients.dart';
 import '../../core/presentation/consumer_copy.dart';
+import '../../core/presentation/ui_art.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/typed_quantities.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
@@ -316,6 +317,7 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
         padding: const EdgeInsets.all(24),
         child: ProductEmptyState(
           icon: Icons.menu_book_outlined,
+          art: isSearching ? null : UiArt.mealDinner,
           title: isSearching
               ? 'No saved recipes match “$query”'
               : 'No saved recipes yet',

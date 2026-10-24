@@ -143,10 +143,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Meal photo'), findsOneWidget);
-    expect(find.text('Meal photo (Beta)'), findsOneWidget);
-
     await tester.tap(find.text('Meal photo'));
-    await tester.ensureVisible(find.text('Meal photo (Beta)'));
+    // The card sits below Recent's empty state (U-3); scroll to it.
+    await tester.scrollUntilVisible(
+      find.text('Meal photo (Beta)'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Meal photo (Beta)'));
     expect(taps, 2);

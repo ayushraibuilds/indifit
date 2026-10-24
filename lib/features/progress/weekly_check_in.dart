@@ -87,6 +87,10 @@ class WeeklyCheckIn {
   final int proteinDays;
   final int weighInDays;
 
+  /// Nothing to tell for the week: no workout, food, weigh-in or best.
+  bool get isEmpty =>
+      workoutsDone == 0 && daysLogged == 0 && weighInDays == 0 && newBests == 0;
+
   /// The first and last day's weight; both null under two weigh-in days.
   final double? firstWeightKg;
   final double? lastWeightKg;
