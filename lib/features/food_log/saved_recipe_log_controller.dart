@@ -9,6 +9,7 @@ import '../../core/presentation/product_failure_presentation.dart';
 import '../../core/typed_quantities.dart';
 import '../../data/repositories/nutrition_recipe_log_coordinator.dart';
 import '../../data/repositories/nutrition_recipe_repository.dart';
+import 'recipe_pot_split.dart';
 
 enum SavedRecipeLogStatus {
   idle,
@@ -32,6 +33,10 @@ class SavedRecipeLogState {
   final NutritionRecipeVersionModel? selectedVersion;
   final NutritionRecipeLogAmountKind amountKind;
   final String amountText;
+
+  /// "I ate 1½ katori" (UF-8): the amount comes from the pot's yield.
+  final bool fromPot;
+  final String potEatenText;
   final NutritionRecipeLogPreview? preview;
   final NutritionConsumptionSnapshot? savedSnapshot;
   final bool partialAcknowledged;
@@ -48,6 +53,8 @@ class SavedRecipeLogState {
     this.selectedVersion,
     this.amountKind = NutritionRecipeLogAmountKind.wholeRecipe,
     this.amountText = '1',
+    this.fromPot = false,
+    this.potEatenText = '1',
     this.preview,
     this.savedSnapshot,
     this.partialAcknowledged = false,
@@ -65,6 +72,8 @@ class SavedRecipeLogState {
     Object? selectedVersion = _unset,
     NutritionRecipeLogAmountKind? amountKind,
     String? amountText,
+    bool? fromPot,
+    String? potEatenText,
     Object? preview = _unset,
     Object? savedSnapshot = _unset,
     bool? partialAcknowledged,
@@ -84,6 +93,8 @@ class SavedRecipeLogState {
         : selectedVersion as NutritionRecipeVersionModel?,
     amountKind: amountKind ?? this.amountKind,
     amountText: amountText ?? this.amountText,
+    fromPot: fromPot ?? this.fromPot,
+    potEatenText: potEatenText ?? this.potEatenText,
     preview: preview == _unset
         ? this.preview
         : preview as NutritionRecipeLogPreview?,
@@ -181,6 +192,8 @@ class SavedRecipeLogController extends StateNotifier<SavedRecipeLogState> {
         selectedVersion: selected,
         amountKind: NutritionRecipeLogAmountKind.wholeRecipe,
         amountText: '1',
+        fromPot: false,
+        potEatenText: '1',
         errorCode: null,
         errorMessage: null,
       );
@@ -239,6 +252,7 @@ class SavedRecipeLogController extends StateNotifier<SavedRecipeLogState> {
     state = state.copyWith(
       amountKind: kind,
       amountText: defaultText,
+      fromPot: false,
       preview: null,
       status: SavedRecipeLogStatus.ready,
       errorCode: null,
@@ -251,6 +265,31 @@ class SavedRecipeLogController extends StateNotifier<SavedRecipeLogState> {
     _resetCommand();
     state = state.copyWith(
       amountText: value,
+      preview: null,
+      status: SavedRecipeLogStatus.ready,
+      errorCode: null,
+      errorMessage: null,
+      partialAcknowledged: false,
+    );
+  }
+
+  /// Logs part of the pot: "I ate [potEatenText]" in the pot's unit.
+  void setFromPot() {
+    _resetCommand();
+    state = state.copyWith(
+      fromPot: true,
+      preview: null,
+      status: SavedRecipeLogStatus.ready,
+      errorCode: null,
+      errorMessage: null,
+      partialAcknowledged: false,
+    );
+  }
+
+  void setPotEatenText(String value) {
+    _resetCommand();
+    state = state.copyWith(
+      potEatenText: value,
       preview: null,
       status: SavedRecipeLogStatus.ready,
       errorCode: null,
@@ -383,6 +422,18 @@ class SavedRecipeLogController extends StateNotifier<SavedRecipeLogState> {
   );
 
   NutritionRecipeLogAmount _amountFromState() {
+    final version = state.selectedVersion;
+    final pot = version == null ? null : RecipePotYield.of(version);
+    if (state.fromPot && pot != null) {
+      final eaten = parsePotAmount(state.potEatenText);
+      if (eaten == null) {
+        throw NutritionRecipeLogError(
+          'invalid_amount',
+          ProductFailurePresentation.fromCode('invalid_amount').message,
+        );
+      }
+      return pot.logAmount(eaten);
+    }
     try {
       return switch (state.amountKind) {
         NutritionRecipeLogAmountKind.wholeRecipe =>

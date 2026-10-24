@@ -9,6 +9,7 @@ import '../../core/typed_quantities.dart';
 import '../../data/repositories/nutrition_food_catalog_repository.dart';
 import '../../data/repositories/nutrition_recipe_repository.dart';
 import '../../data/repositories/nutrition_transformation_repository.dart';
+import 'recipe_pot_split.dart';
 
 enum NutritionRecipeEditorStatus {
   idle,
@@ -27,6 +28,9 @@ class NutritionRecipeEditorState {
   final String name;
   final String description;
   final String servingCountText;
+
+  /// How [servingCountText] counts the pot: katori, servings or grams.
+  final RecipePotUnit potUnit;
   final String? servingDefinitionId;
   final String? servingDefinitionRevision;
   final String? servingDefinitionSource;
@@ -44,6 +48,7 @@ class NutritionRecipeEditorState {
     this.name = '',
     this.description = '',
     this.servingCountText = '1',
+    this.potUnit = RecipePotUnit.servings,
     this.servingDefinitionId,
     this.servingDefinitionRevision,
     this.servingDefinitionSource,
@@ -62,6 +67,7 @@ class NutritionRecipeEditorState {
     String? name,
     String? description,
     String? servingCountText,
+    RecipePotUnit? potUnit,
     Object? servingDefinitionId = _unset,
     Object? servingDefinitionRevision = _unset,
     Object? servingDefinitionSource = _unset,
@@ -78,6 +84,7 @@ class NutritionRecipeEditorState {
     name: name ?? this.name,
     description: description ?? this.description,
     servingCountText: servingCountText ?? this.servingCountText,
+    potUnit: potUnit ?? this.potUnit,
     servingDefinitionId: servingDefinitionId == _unset
         ? this.servingDefinitionId
         : servingDefinitionId as String?,
@@ -143,6 +150,7 @@ class NutritionRecipeEditorController
       var name = state.name;
       var description = state.description;
       var servingCountText = state.servingCountText;
+      var potUnit = state.potUnit;
       String? servingDefinitionId = state.servingDefinitionId;
       String? servingDefinitionRevision = state.servingDefinitionRevision;
       String? servingDefinitionSource = state.servingDefinitionSource;
@@ -169,6 +177,11 @@ class NutritionRecipeEditorController
             ingredients = _toInputs(version.ingredients);
             servingCountText =
                 version.servingDefinition?.count.toString() ?? '1';
+            final pot = RecipePotYield.of(version);
+            if (pot != null) {
+              potUnit = pot.unit;
+              servingCountText = pot.amount.toString();
+            }
             servingDefinitionId = version.servingDefinition?.id;
             servingDefinitionRevision = version.servingDefinition?.revision;
             servingDefinitionSource = version.servingDefinition?.source;
@@ -182,6 +195,11 @@ class NutritionRecipeEditorController
         ingredients = _toInputs(draft.version.ingredients);
         servingCountText =
             draft.version.servingDefinition?.count.toString() ?? '1';
+        final pot = RecipePotYield.of(draft.version);
+        if (pot != null) {
+          potUnit = pot.unit;
+          servingCountText = pot.amount.toString();
+        }
         servingDefinitionId = draft.version.servingDefinition?.id;
         servingDefinitionRevision = draft.version.servingDefinition?.revision;
         servingDefinitionSource = draft.version.servingDefinition?.source;
@@ -196,6 +214,7 @@ class NutritionRecipeEditorController
         name: name,
         description: description,
         servingCountText: servingCountText,
+        potUnit: potUnit,
         servingDefinitionId: servingDefinitionId,
         servingDefinitionRevision: servingDefinitionRevision,
         servingDefinitionSource: servingDefinitionSource,
@@ -226,6 +245,9 @@ class NutritionRecipeEditorController
 
   void setServingCount(String value) =>
       state = state.copyWith(servingCountText: value);
+
+  /// "This pot makes" is counted in [unit] (UF-8).
+  void setPotUnit(RecipePotUnit unit) => state = state.copyWith(potUnit: unit);
 
   Future<List<NutritionTransformation>> transformationsFor(
     NutritionFoodOption option,
@@ -362,15 +384,27 @@ class NutritionRecipeEditorController
       if (servingCount.isZero) {
         throw const NutritionRecipeValidationError(
           'invalid_serving_count',
-          'Declared servings must be greater than zero.',
+          'How much the pot makes must be more than zero.',
         );
       }
+      // "This pot makes" (UF-8): katori and servings are the declared
+      // servings; total grams is the yield, with the pot as one serving.
+      final grams = state.potUnit == RecipePotUnit.grams;
       final servingDefinition = NutritionRecipeServingDefinition(
         id: state.servingDefinitionId ?? 'recipe-serving::${_uuid.v4()}',
         revision: state.servingDefinitionRevision ?? 'b03-editor-v1',
-        count: servingCount,
+        count: grams ? QuantityAmount.one : servingCount,
         source: state.servingDefinitionSource,
+        unit: state.potUnit == RecipePotUnit.katori
+            ? RecipePotUnit.katori.label
+            : null,
       );
+      final yieldQuantity = grams
+          ? Quantity.fromDecimal(
+              amount: servingCount.toString(),
+              unit: QuantityUnit.gram,
+            )
+          : null;
       NutritionRecipeDraftModel draft;
       if (state.draft != null) {
         draft = await _recipes.updateDraft(
@@ -379,6 +413,8 @@ class NutritionRecipeEditorController
           name: state.name,
           description: state.description,
           servingDefinition: servingDefinition,
+          yieldQuantity: yieldQuantity,
+          clearYield: !grams,
           ingredients: state.ingredients,
         );
       } else if (state.recipe != null && state.published) {
@@ -392,6 +428,8 @@ class NutritionRecipeEditorController
           name: state.name,
           description: state.description,
           servingDefinition: servingDefinition,
+          yieldQuantity: yieldQuantity,
+          clearYield: !grams,
           // Published ingredient IDs belong to the immutable parent graph.
           // A successor must receive fresh portable line IDs even when the
           // user leaves an ingredient otherwise unchanged.
@@ -403,6 +441,7 @@ class NutritionRecipeEditorController
           name: state.name,
           description: state.description,
           servingDefinition: servingDefinition,
+          yieldQuantity: yieldQuantity,
           ingredients: state.ingredients,
         );
       }
