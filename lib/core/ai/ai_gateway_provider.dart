@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/app_config.dart';
 import '../di/core_providers.dart';
+import '../privacy/network_receipt.dart';
 import '../privacy/privacy_policy.dart';
 import 'ai_daily_caps.dart';
 import 'ai_gateway.dart';
@@ -21,6 +22,7 @@ final aiGatewayProvider = Provider<AiGateway>((ref) {
   final tokens = AiTokenUsageCounter(preferences);
   final firebase = FirebaseAiGateway(
     onUsage: (_, usage) => unawaited(tokens.add(usage)),
+    onRequest: (_) => unawaited(NetworkReceipt.record(NetworkCallKind.ai)),
   );
   // Offline Mode must stop every Firebase connection, including the
   // Remote Config listener an earlier AI call opened.

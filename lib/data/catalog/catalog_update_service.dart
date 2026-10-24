@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/config/app_preferences_keys.dart';
 import '../../core/nutrients.dart';
+import '../../core/privacy/network_receipt.dart';
 import '../../core/services/crash_reporting_service.dart';
 import '../../core/utils/app_logger.dart';
 import '../database/app_database.dart';
@@ -237,6 +238,7 @@ class CatalogUpdateService {
           AppPreferenceKeys.catalogUpdateLastCheckAt,
           now.millisecondsSinceEpoch,
         );
+        await NetworkReceipt.record(NetworkCallKind.foodDatabase);
         manifest = await _fetchManifest(prefs);
       } else {
         // Between checks, only an update already found and held back for

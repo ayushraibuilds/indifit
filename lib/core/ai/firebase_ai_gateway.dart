@@ -42,12 +42,19 @@ abstract final class AiRemoteConfigKeys {
 /// Firebase. Output is constrained by a response schema rather than by prompt
 /// wording.
 class FirebaseAiGateway implements AiGateway {
-  FirebaseAiGateway({this.timeout = const Duration(seconds: 30), this.onUsage});
+  FirebaseAiGateway({
+    this.timeout = const Duration(seconds: 30),
+    this.onUsage,
+    this.onRequest,
+  });
 
   final Duration timeout;
 
   /// Called with Gemini's token counts after each answered request.
   final void Function(GeminiRequestKind kind, AiTokenUsage usage)? onUsage;
+
+  /// Called just before a request goes to Gemini (the data receipt, UF-21).
+  final void Function(GeminiRequestKind kind)? onRequest;
 
   static Future<void>? _initialization;
   static AiRemoteConfigRefresher? _refresher;
@@ -116,6 +123,7 @@ class FirebaseAiGateway implements AiGateway {
     );
 
     final GenerateContentResponse response;
+    onRequest?.call(kind);
     try {
       response = await model.generateContent(prompt).timeout(timeout);
     } on TimeoutException {

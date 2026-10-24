@@ -1,9 +1,11 @@
 import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/app_preferences_keys.dart';
+import '../privacy/network_receipt.dart';
 import '../utils/app_logger.dart';
 
 class CrashReportingService {
@@ -142,6 +144,7 @@ class CrashReportingService {
 
     if (!_isEnabled) return;
 
+    unawaited(NetworkReceipt.record(NetworkCallKind.crashReports));
     Sentry.captureException(
       exception,
       stackTrace: stackTrace,

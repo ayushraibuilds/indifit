@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
@@ -5,6 +7,7 @@ import 'package:in_app_purchase_android/billing_client_wrappers.dart'
     show BillingResponse;
 import 'package:in_app_purchase_android/in_app_purchase_android.dart';
 
+import '../../core/privacy/network_receipt.dart';
 import '../../core/utils/app_logger.dart';
 
 /// A tip product as the store reports it. [price] is the store's own
@@ -136,6 +139,7 @@ class InAppPurchaseTipStore implements TipStore {
 
   @override
   Future<TipProductQuery> queryProducts(Set<String> ids) async {
+    unawaited(NetworkReceipt.record(NetworkCallKind.tipJar));
     final response = await _iap.queryProductDetails(ids);
     for (final details in response.productDetails) {
       _details[details.id] = details;
@@ -184,6 +188,7 @@ class InAppPurchaseTipStore implements TipStore {
 
   @override
   Future<bool> buy(String productId) async {
+    unawaited(NetworkReceipt.record(NetworkCallKind.tipJar));
     final details = _details[productId];
     if (details == null) return false;
     // A consumable, so a tip never turns into an owned item. The app consumes
