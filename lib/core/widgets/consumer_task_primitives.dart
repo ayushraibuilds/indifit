@@ -119,6 +119,9 @@ class ProductEmptyState extends StatelessWidget {
     this.action,
     this.actionLabel,
     this.actionIcon,
+    this.secondaryAction,
+    this.secondaryActionLabel,
+    this.secondaryActionIcon,
   });
 
   final IconData icon;
@@ -130,6 +133,11 @@ class ProductEmptyState extends StatelessWidget {
   final VoidCallback? action;
   final String? actionLabel;
   final IconData? actionIcon;
+
+  /// A quieter second way in, beside the primary [action].
+  final VoidCallback? secondaryAction;
+  final String? secondaryActionLabel;
+  final IconData? secondaryActionIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -170,10 +178,22 @@ class ProductEmptyState extends StatelessWidget {
                 Text(message, style: B05Typography.body(context)),
                 if (action != null && actionLabel != null) ...[
                   const SizedBox(height: B05Layout.space16),
-                  B05ActionButton(
-                    label: actionLabel!,
-                    icon: actionIcon,
-                    onPressed: action,
+                  B05ActionGroup(
+                    children: [
+                      B05ActionButton(
+                        label: actionLabel!,
+                        icon: actionIcon,
+                        onPressed: action,
+                      ),
+                      if (secondaryAction != null &&
+                          secondaryActionLabel != null)
+                        B05ActionButton(
+                          label: secondaryActionLabel!,
+                          icon: secondaryActionIcon,
+                          emphasis: B05ActionEmphasis.secondary,
+                          onPressed: secondaryAction,
+                        ),
+                    ],
                   ),
                 ],
               ],

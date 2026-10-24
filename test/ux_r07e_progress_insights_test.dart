@@ -31,8 +31,8 @@ void main() {
         find.text('Your workouts, bests and weight trend will show here.'),
         findsOneWidget,
       );
-      // One action (U-3).
-      expect(find.text('Log weight'), findsNothing);
+      // "Start a workout" leads; "Log weight" sits beside it (U-3).
+      expect(find.text('Log weight'), findsOneWidget);
       expect(find.text('Start a workout'), findsOneWidget);
       expect(find.textContaining('0 workouts'), findsNothing);
       expect(find.byKey(const ValueKey('progress_weight_chart')), findsNothing);
