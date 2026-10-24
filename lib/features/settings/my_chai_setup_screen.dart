@@ -133,13 +133,14 @@ class _MyChaiSetupScreenState extends ConsumerState<MyChaiSetupScreen> {
             (milk) => milk.label,
             (milk) => _chai = _chai.copyWith(milk: milk),
           ),
-          _choices(
-            'How much of the cup is milk',
-            MyChaiMilkShare.values,
-            _chai.milkShare,
-            (share) => share.label,
-            (share) => _chai = _chai.copyWith(milkShare: share),
-          ),
+          if (_chai.milk.isDairy)
+            _choices(
+              'How much of the cup is milk',
+              MyChaiMilkShare.values,
+              _chai.milkShare,
+              (share) => share.label,
+              (share) => _chai = _chai.copyWith(milkShare: share),
+            ),
           _choices(
             'Sugar',
             kMyChaiSugarChoices,
@@ -172,8 +173,10 @@ class _MyChaiSetupScreenState extends ConsumerState<MyChaiSetupScreen> {
           ],
           const SizedBox(height: 4),
           Text(
-            'Milk and sugar values are USDA FoodData Central. Tea water '
-            'adds nothing.',
+            _chai.milk.isDairy
+                ? 'Milk and sugar values are USDA FoodData Central. Tea '
+                      'water adds nothing.'
+                : 'Black tea and sugar values are USDA FoodData Central.',
             style: B05Typography.caption(context),
           ),
           const SizedBox(height: 24),

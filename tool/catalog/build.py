@@ -48,7 +48,7 @@ SPOTCHECK_SEED = 20261007
 SPOTCHECK_VERSION = 4
 
 FORMAT = 1
-LATEST = 6
+LATEST = 7
 MIN_APP_BUILD = 1
 SOURCE_ID = "indifit-catalogue-v1"
 
@@ -79,6 +79,16 @@ INGREDIENTS = CATALOG / "sources/usda-ingredients-v1/foods.csv"
 INGREDIENTS_VERSION = 6
 INGREDIENTS_SOURCE = {
     "id": "usda-ingredients-v1",
+    "licence": "CC0-1.0",
+    "attribution": "USDA FoodData Central, SR Legacy",
+    "review": "unreviewed",
+}
+# Pack 7 adds black tea, for My chai with no milk:
+# sources/usda-ingredients-v2/.
+INGREDIENTS_V2 = CATALOG / "sources/usda-ingredients-v2/foods.csv"
+INGREDIENTS_V2_VERSION = 7
+INGREDIENTS_V2_SOURCE = {
+    "id": "usda-ingredients-v2",
     "licence": "CC0-1.0",
     "attribution": "USDA FoodData Central, SR Legacy",
     "review": "unreviewed",
@@ -497,6 +507,13 @@ def build_pack(version, rows=None, overlay_dir=OVERLAYS, apply_fixes=True):
             key=lambda food: food["id"],
         )
         sources.append(dict(INGREDIENTS_SOURCE))
+    if version >= INGREDIENTS_V2_VERSION:
+        foods = sorted(
+            foods
+            + staple_foods(foods, INGREDIENTS_V2, version, INGREDIENTS_V2_SOURCE),
+            key=lambda food: food["id"],
+        )
+        sources.append(dict(INGREDIENTS_V2_SOURCE))
     if version >= STAPLES_VERSION:
         by_id = {food["id"]: food for food in foods}
         for name, data in load_overlays(version, overlay_dir):

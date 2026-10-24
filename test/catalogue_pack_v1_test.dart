@@ -39,7 +39,7 @@ void main() {
       final state = await catalogue.db.select(catalogue.db.catalogState).get();
       expect(state.single.version, kBundledCatalogPackVersion);
       expect(state.single.source, 'bundled');
-      expect(state.single.foodCount, 733);
+      expect(state.single.foodCount, 734);
     });
 
     test('2 roti servings in a thali give 170 kcal', () async {

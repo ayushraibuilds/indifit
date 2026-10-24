@@ -1,14 +1,14 @@
 {
   "format": 1,
-  "latest": 6,
+  "latest": 7,
   "min_app_build": 1,
   "packs": [
     {
-      "bytes": 34708,
+      "bytes": 34797,
       "kind": "full",
-      "sha256": "675d671a5ef1b32e8c9e222d54749af84d38f26ebdc832aead3fbeb7b9513f87",
-      "url": "pack-6.json.gz",
-      "version": 6
+      "sha256": "1b79e3484a28646cb9609e84807c11bc2e0236daa2d5f8ab630bfb45a2b22aa5",
+      "url": "pack-7.json.gz",
+      "version": 7
     }
   ]
 }
