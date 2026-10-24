@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/config/app_preferences_keys.dart';
 import 'package:indifit/core/di/providers.dart';
 import 'package:indifit/core/nutrition_household_measures.dart';
+import 'package:indifit/core/typed_quantities.dart';
 import 'package:indifit/data/catalog/catalog_pack.dart';
 import 'package:indifit/data/repositories/food_repository.dart';
 import 'package:indifit/features/food_log/my_chai.dart';
@@ -34,6 +35,10 @@ void main() {
     final option = await c.catalog.getOption(kMyChaiBlackTeaFoodId);
     expect(option, isNotNull);
     expect(option!.displayName, 'Black Tea (no milk, no sugar)');
+    // One cup as the app pours it: 150 ml.
+    final cup = option.defaultLoggingQuantity;
+    expect(cup.unit, QuantityUnit.millilitre);
+    expect(cup.amount.asDouble, 150);
   });
 
   test('"black tea" finds it, and so do its aliases', () async {

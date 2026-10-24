@@ -4,9 +4,9 @@
   "min_app_build": 1,
   "packs": [
     {
-      "bytes": 34797,
+      "bytes": 34794,
       "kind": "full",
-      "sha256": "1b79e3484a28646cb9609e84807c11bc2e0236daa2d5f8ab630bfb45a2b22aa5",
+      "sha256": "9d943ce1808a64a2e31164ac0b715e8df450f23fc441d24477224d91beac22f8",
       "url": "pack-7.json.gz",
       "version": 7
     }

@@ -15,7 +15,7 @@ no milk and no sugar logs black tea's own facts (UF-2 follow-up).
 
 | id | Food | FDC | Note |
 |---|---|---|---|
-| food-usda-0306 | Black Tea (no milk, no sugar) | 173227 Beverages, tea, black, brewed, prepared with tap water | default serving is SR Legacy's "1 cup (8 fl oz)" = 237 g |
+| food-usda-0306 | Black Tea (no milk, no sugar) | 173227 Beverages, tea, black, brewed, prepared with tap water | default serving 150 ml: the app's chai cup, as "Tea with Milk and Sugar" uses. SR Legacy's own "1 cup (8 fl oz)" is 237 g; this source format holds one serving, so it isn't carried. |
 
 Per 100 g as published: energy 1 kcal, protein 0.0 g, total lipid 0.0 g,
 carbohydrate (by difference) 0.3 g, fibre 0.0 g. Read per 100 ml taking 1 g
