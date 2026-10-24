@@ -13,6 +13,7 @@ import 'package:indifit/core/privacy/privacy_policy.dart';
 import 'package:indifit/core/services/crash_reporting_service.dart';
 import 'package:indifit/core/theme/app_theme.dart';
 import 'package:indifit/data/catalog/catalog_update_service.dart';
+import 'package:indifit/data/repositories/food_api_service.dart';
 import 'package:indifit/features/settings/food_database_screen.dart';
 import 'package:indifit/features/settings/network_activity_screen.dart';
 import 'package:indifit/features/support/tip_store.dart';
@@ -102,6 +103,48 @@ void main() {
       );
       await settle();
       expect(NetworkReceipt.lastRan(prefs, NetworkCallKind.foodLookup), isNull);
+    });
+  });
+
+  group('with Offline mode off, food lookups still work', () {
+    // The app's own clients, interceptor included, on fake servers.
+    Future<FoodApiService> service(HttpClientAdapter backend) async {
+      SharedPreferences.setMockInitialValues({});
+      prefs = await SharedPreferences.getInstance();
+      final container = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
+      addTearDown(container.dispose);
+      final dio = container.read(dioProvider)..httpClientAdapter = backend;
+      final off = container.read(openFoodFactsDioProvider)
+        ..httpClientAdapter = _OffProduct();
+      return FoodApiService(
+        dio,
+        container.read(privacyPolicyProvider),
+        null,
+        'https://api.test',
+        off,
+      );
+    }
+
+    test('online food search', () async {
+      final results = await (await service(
+        _SearchResults(),
+      )).searchOnline('paneer');
+      expect(results.single.name, 'Paneer');
+      await settle();
+      expect(NetworkReceipt.lastRan(prefs, NetworkCallKind.foodLookup), now);
+    });
+
+    test('barcode, falling back to Open Food Facts', () async {
+      final result = await (await service(
+        _Unavailable(),
+      )).fetchByBarcode('8901063010018');
+      expect(result, isNotNull);
+      expect(result!.name, 'Parle-G');
+      expect(result.calories, 450);
+      await settle();
+      expect(NetworkReceipt.lastRan(prefs, NetworkCallKind.foodLookup), now);
     });
   });
 
@@ -316,4 +359,88 @@ class _FakeIap implements InAppPurchase {
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// The backend's search answer, as food_api_service_test has it.
+class _SearchResults implements HttpClientAdapter {
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async => ResponseBody.fromString(
+    jsonEncode({
+      'results': [
+        {
+          'id': 'curated_paneer',
+          'name': 'Paneer',
+          'category_id': 'dairy_liquid',
+          'calories': 265.0,
+          'protein_g': 18.3,
+          'carbs_g': 1.2,
+          'fat_g': 20.8,
+          'fiber_g': 0.0,
+          'serving_size': 100.0,
+          'serving_unit': 'g',
+          'source': 'curated',
+          'provenance': 'curated',
+          'confidence': 'high',
+        },
+      ],
+      'count': 1,
+      'total_hits': 1,
+      'has_more': false,
+      'query': 'paneer',
+    }),
+    200,
+    headers: {
+      Headers.contentTypeHeader: [Headers.jsonContentType],
+    },
+  );
+
+  @override
+  void close({bool force = false}) {}
+}
+
+/// The backend is down, so barcode lookup falls back to Open Food Facts.
+class _Unavailable implements HttpClientAdapter {
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async => ResponseBody.fromString('', 503);
+
+  @override
+  void close({bool force = false}) {}
+}
+
+class _OffProduct implements HttpClientAdapter {
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async => ResponseBody.fromString(
+    jsonEncode({
+      'status': 1,
+      'product': {
+        'code': '8901063010018',
+        'product_name': 'Parle-G',
+        'nutriments': {
+          'energy-kcal_100g': 450,
+          'proteins_100g': 7,
+          'carbohydrates_100g': 77,
+          'fat_100g': 12.5,
+        },
+      },
+    }),
+    200,
+    headers: {
+      Headers.contentTypeHeader: [Headers.jsonContentType],
+    },
+  );
+
+  @override
+  void close({bool force = false}) {}
 }
