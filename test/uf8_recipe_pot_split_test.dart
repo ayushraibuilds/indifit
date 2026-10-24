@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:indifit/core/backup/backup_v10.dart';
 import 'package:indifit/core/nutrition_household_measures.dart';
 import 'package:indifit/core/typed_quantities.dart';
 import 'package:indifit/data/database/app_database.dart'
@@ -8,6 +11,7 @@ import 'package:indifit/data/repositories/nutrition_recipe_log_coordinator.dart'
 import 'package:indifit/data/repositories/nutrition_recipe_repository.dart';
 import 'package:indifit/features/food_log/recipe_pot_split.dart';
 
+import 'support/indifit_test_harness.dart';
 import 'support/real_catalogue.dart';
 
 const _dal = 'food-uf8-dal';
@@ -224,6 +228,30 @@ void main() {
       recipeId: published.recipeId,
     );
     expect(RecipePotYield.of(successor.version)!.label, '5 katori');
+  });
+
+  test('a katori pot survives backup export and restore', () async {
+    final databases = registerTestDatabaseScope();
+    final source = databases.create();
+    final target = databases.create();
+    final draft = await NutritionRecipeRepository(db: source).createDraft(
+      userId: user,
+      name: 'Chole',
+      servingDefinition: serving(6, unit: 'katori'),
+    );
+
+    final backup = await BackupV10Data.createFromDatabase(source);
+    final json = jsonEncode(backup.toJson());
+    expect(json, contains('serving_definition_unit'));
+    await BackupV10Data.fromJson(
+      jsonDecode(json) as Map<String, dynamic>,
+    ).restoreToDatabase(target);
+
+    final restored = (await NutritionRecipeRepository(
+      db: target,
+    ).getDraft(draft.version.id))!.version;
+    expect(restored.servingDefinition!.unit, 'katori');
+    expect(RecipePotYield.of(restored)!.label, '6 katori');
   });
 
   group('older recipes behave as before', () {
