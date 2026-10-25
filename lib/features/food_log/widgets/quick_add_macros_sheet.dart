@@ -18,6 +18,7 @@ import '../../../core/typed_quantities.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../data/database/app_database.dart'
     hide NutritionConsumptionSnapshot;
+import '../../dashboard/day_marks.dart';
 import '../../dashboard/today_surface_controller.dart';
 import '../canonical_food_actions.dart';
 import '../food_log_surface.dart';
@@ -374,11 +375,12 @@ class _QuickAddMacrosSheetState extends ConsumerState<QuickAddMacrosSheet> {
                 Expanded(
                   child: InkWell(
                     onTap: () async {
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate: _selectedDate,
-                        firstDate: DateTime(2020),
-                        lastDate: DateTime.now().add(const Duration(days: 30)),
+                      final picked = await pickDiaryDay(
+                        context,
+                        initialDay: _selectedDate,
+                        // Food is logged up to today, never ahead.
+                        lastDay: DateTime.now(),
+                        title: 'Log on',
                       );
                       if (picked != null) {
                         setState(() => _selectedDate = picked);

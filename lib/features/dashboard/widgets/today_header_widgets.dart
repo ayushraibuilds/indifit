@@ -11,6 +11,7 @@ import '../../../core/presentation/daypart_greeting.dart';
 import '../../../core/presentation/today_onboarding_handoff.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
+import '../day_marks.dart';
 import '../today_consumer_presentation.dart';
 import '../today_presentation_types.dart';
 import '../today_week_controller.dart';
@@ -303,17 +304,20 @@ class _TodayDateLine extends StatelessWidget {
     DateTime todayDay,
   ) async {
     final firstDate = DateTime(2020);
-    final lastDate = DateTime(todayDay.year + 1, todayDay.month, todayDay.day);
+    // The picker reaches back for diary days and stops at today; later
+    // days stay on the week strip.
+    final lastDate = todayDay;
     final initialDate = selected.isBefore(firstDate)
         ? firstDate
         : selected.isAfter(lastDate)
         ? lastDate
         : selected;
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: initialDate,
-      firstDate: firstDate,
-      lastDate: lastDate,
+    final picked = await pickDiaryDay(
+      context,
+      initialDay: initialDate,
+      firstDay: firstDate,
+      lastDay: lastDate,
+      today: todayDay,
     );
     if (picked != null) {
       onDateChanged?.call(DateTime(picked.year, picked.month, picked.day));
