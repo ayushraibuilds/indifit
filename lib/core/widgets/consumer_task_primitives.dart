@@ -106,24 +106,38 @@ class ConsumerTaskScaffold extends StatelessWidget {
 /// A calm, one-surface empty state for consumer product screens.
 ///
 /// It deliberately accepts display-ready copy so implementation state and
-/// domain identifiers cannot leak into ordinary UI.
+/// domain identifiers cannot leak into ordinary UI. One line says what the
+/// screen will show and one [action] starts it (U-3); [art] (a [UiArt]
+/// path) replaces the [icon] where a picture fits.
 class ProductEmptyState extends StatelessWidget {
   const ProductEmptyState({
     required this.title,
     required this.message,
     super.key,
     this.icon = Icons.checklist_rounded,
+    this.art,
     this.action,
     this.actionLabel,
     this.actionIcon,
+    this.secondaryAction,
+    this.secondaryActionLabel,
+    this.secondaryActionIcon,
   });
 
   final IconData icon;
+
+  /// A [UiArt] image shown in place of [icon].
+  final String? art;
   final String title;
   final String message;
   final VoidCallback? action;
   final String? actionLabel;
   final IconData? actionIcon;
+
+  /// A quieter second way in, beside the primary [action].
+  final VoidCallback? secondaryAction;
+  final String? secondaryActionLabel;
+  final IconData? secondaryActionIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -144,21 +158,42 @@ class ProductEmptyState extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  icon,
-                  size: B05Layout.iconLarge,
-                  color: context.b05Colors.action,
-                ),
+                if (art case final art?)
+                  Image.asset(
+                    art,
+                    key: const Key('product_empty_state_art'),
+                    width: 48,
+                    height: 48,
+                    excludeFromSemantics: true,
+                  )
+                else
+                  Icon(
+                    icon,
+                    size: B05Layout.iconLarge,
+                    color: context.b05Colors.action,
+                  ),
                 const SizedBox(height: B05Layout.space12),
                 Text(title, style: B05Typography.title(context)),
                 const SizedBox(height: B05Layout.space4),
                 Text(message, style: B05Typography.body(context)),
                 if (action != null && actionLabel != null) ...[
                   const SizedBox(height: B05Layout.space16),
-                  B05ActionButton(
-                    label: actionLabel!,
-                    icon: actionIcon,
-                    onPressed: action,
+                  B05ActionGroup(
+                    children: [
+                      B05ActionButton(
+                        label: actionLabel!,
+                        icon: actionIcon,
+                        onPressed: action,
+                      ),
+                      if (secondaryAction != null &&
+                          secondaryActionLabel != null)
+                        B05ActionButton(
+                          label: secondaryActionLabel!,
+                          icon: secondaryActionIcon,
+                          emphasis: B05ActionEmphasis.secondary,
+                          onPressed: secondaryAction,
+                        ),
+                    ],
                   ),
                 ],
               ],

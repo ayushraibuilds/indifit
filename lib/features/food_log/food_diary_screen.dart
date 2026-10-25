@@ -8,11 +8,13 @@ import '../../core/di/providers.dart';
 import '../../core/nutrition_household_measures.dart';
 import '../../core/nutrition_legacy_read_models.dart';
 import '../../core/presentation/product_failure_presentation.dart';
+import '../../core/presentation/ui_art.dart';
 import '../../core/services/local_schedule_date_service.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/typed_quantities.dart';
 import '../../core/utils/app_logger.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../core/widgets/consumer_task_primitives.dart';
 import '../../core/widgets/indi_fit_feedback.dart';
 import '../dashboard/day_marks.dart';
 import '../dashboard/today_consumer_presentation.dart';
@@ -339,6 +341,19 @@ class _FoodDiaryScreenState extends ConsumerState<FoodDiaryScreen> {
                 ],
               );
             }(),
+            // U-3: a day with nothing logged says what it will show.
+            if (daily != null && records.isEmpty) ...[
+              const SizedBox(height: 12),
+              ProductEmptyState(
+                key: const Key('food_diary_empty_day'),
+                art: UiArt.mealLunch,
+                title: 'Nothing logged on this day',
+                message: 'Your meals, calories and protein will show here.',
+                action: () => _openMealPicker(context),
+                actionLabel: 'Log your first meal',
+                actionIcon: Icons.add_rounded,
+              ),
+            ],
             const SizedBox(height: 20),
             Text('Food tools', style: B05Typography.title(context)),
             const SizedBox(height: 2),

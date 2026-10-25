@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/di/providers.dart';
 import '../../core/presentation/consumer_copy.dart';
+import '../../core/presentation/ui_art.dart';
 import '../../core/services/indifit_haptics.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
@@ -341,6 +342,7 @@ class _SavedMealsScreenState extends ConsumerState<SavedMealsScreen> {
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       child: ProductEmptyState(
         icon: Icons.bookmark_border_rounded,
+        art: hasSearch ? null : UiArt.mealLunch,
         title: !hasSearch
             ? 'No saved meals yet'
             : 'No saved meals match "${_searchController.text}"',

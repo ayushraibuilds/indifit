@@ -5,8 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../core/navigation/app_navigation.dart';
 import '../../core/utils/app_logger.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
+import '../../core/widgets/consumer_task_primitives.dart';
 import '../settings/unit_preference.dart';
 import '../workout_player/widgets/workout_share_card.dart';
 import 'training_bests.dart';
@@ -72,51 +74,65 @@ class _WeeklyCheckInScreenState extends ConsumerState<WeeklyCheckInScreen> {
             ),
           ),
         ),
-        data: (checkIn) => ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-          children: [
-            WeeklyCheckInView(checkIn: checkIn, units: units),
-            const SizedBox(height: B05Layout.space24),
-            // The share image, previewed as the workout share card is.
-            Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 200),
-                child: ExcludeSemantics(
-                  child: ClipRRect(
-                    borderRadius: b05Radius(B05SurfaceRadius.large),
-                    child: AspectRatio(
-                      aspectRatio: WorkoutStoryCard.size.aspectRatio,
-                      child: FittedBox(
-                        child: RepaintBoundary(
-                          key: _shareKey,
-                          child: WeeklyCheckInStoryCard(
-                            checkIn: checkIn,
-                            units: units,
+        data: (checkIn) => checkIn.isEmpty
+            ? Padding(
+                padding: const EdgeInsets.all(B05Layout.space16),
+                child: ProductEmptyState(
+                  key: const Key('weekly_check_in_empty'),
+                  icon: Icons.event_note_rounded,
+                  title: 'Nothing for this week yet',
+                  message:
+                      'Your workouts, protein and weigh-ins from Mon–Sun will show here.',
+                  action: () => goToTrainingTab(context),
+                  actionLabel: 'Start a workout',
+                  actionIcon: Icons.fitness_center_rounded,
+                ),
+              )
+            : ListView(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+                children: [
+                  WeeklyCheckInView(checkIn: checkIn, units: units),
+                  const SizedBox(height: B05Layout.space24),
+                  // The share image, previewed as the workout share card is.
+                  Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 200),
+                      child: ExcludeSemantics(
+                        child: ClipRRect(
+                          borderRadius: b05Radius(B05SurfaceRadius.large),
+                          child: AspectRatio(
+                            aspectRatio: WorkoutStoryCard.size.aspectRatio,
+                            child: FittedBox(
+                              child: RepaintBoundary(
+                                key: _shareKey,
+                                child: WeeklyCheckInStoryCard(
+                                  checkIn: checkIn,
+                                  units: units,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
-                ),
+                  const SizedBox(height: B05Layout.space12),
+                  FilledButton.icon(
+                    key: const Key('weekly_check_in_share'),
+                    onPressed: _sharing
+                        ? null
+                        : () => unawaited(_share(checkIn, units)),
+                    icon: const Icon(Icons.ios_share_rounded, size: 18),
+                    label: const Text('Share my week'),
+                  ),
+                  const SizedBox(height: B05Layout.space8),
+                  Text(
+                    'The image has no name or photo, only these numbers.',
+                    textAlign: TextAlign.center,
+                    style: B05Typography.caption(context),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: B05Layout.space12),
-            FilledButton.icon(
-              key: const Key('weekly_check_in_share'),
-              onPressed: _sharing
-                  ? null
-                  : () => unawaited(_share(checkIn, units)),
-              icon: const Icon(Icons.ios_share_rounded, size: 18),
-              label: const Text('Share my week'),
-            ),
-            const SizedBox(height: B05Layout.space8),
-            Text(
-              'The image has no name or photo, only these numbers.',
-              textAlign: TextAlign.center,
-              style: B05Typography.caption(context),
-            ),
-          ],
-        ),
       ),
     );
   }

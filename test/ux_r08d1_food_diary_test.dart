@@ -160,6 +160,13 @@ void main() {
     );
     expect(find.text('Recent and frequent'), findsOneWidget);
     expect(find.text('Search foods'), findsNothing);
+    // The empty-day card (U-3) sits above the tools, so scroll to them.
+    await tester.scrollUntilVisible(
+      find.text('Saved recipes'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.byKey(const Key('food_diary_empty_day')), findsOneWidget);
     expect(find.text('Saved meals'), findsOneWidget);
     expect(find.text('Saved recipes'), findsOneWidget);
   });

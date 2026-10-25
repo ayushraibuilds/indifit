@@ -28,13 +28,12 @@ void main() {
 
       expect(find.text('Your progress starts here'), findsOneWidget);
       expect(
-        find.text(
-          'Complete a workout or log a weigh-in to start seeing useful trends.',
-        ),
+        find.text('Your workouts, bests and weight trend will show here.'),
         findsOneWidget,
       );
+      // "Start a workout" leads; "Log weight" sits beside it (U-3).
       expect(find.text('Log weight'), findsOneWidget);
-      expect(find.text('Start workout'), findsOneWidget);
+      expect(find.text('Start a workout'), findsOneWidget);
       expect(find.textContaining('0 workouts'), findsNothing);
       expect(find.byKey(const ValueKey('progress_weight_chart')), findsNothing);
       expect(tester.takeException(), isNull);
@@ -419,7 +418,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Start workout'));
+    await tester.tap(find.text('Start a workout'));
     await tester.pumpAndSettle();
     expect(find.text('Training Tab'), findsOneWidget);
   });

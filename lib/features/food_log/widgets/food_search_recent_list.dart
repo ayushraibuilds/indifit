@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/presentation/ui_art.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../core/widgets/consumer_task_primitives.dart';
@@ -59,42 +60,6 @@ class FoodSearchNavigationCard extends StatelessWidget {
   );
 }
 
-/// Landing empty state banner extracted verbatim from `food_search_screen.dart`.
-class FoodSearchLandingEmpty extends StatelessWidget {
-  final String title;
-  final String message;
-
-  const FoodSearchLandingEmpty({
-    super.key,
-    required this.title,
-    required this.message,
-  });
-
-  @override
-  Widget build(BuildContext context) => B05Surface(
-    subtle: true,
-    showBorder: false,
-    padding: const EdgeInsets.all(16),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(Icons.history_rounded, color: context.b05Colors.action),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: B05Typography.label(context)),
-              const SizedBox(height: 2),
-              Text(message, style: B05Typography.body(context)),
-            ],
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
 /// Recent and landing state list extracted from `food_search_screen.dart`.
 ///
 /// Encapsulates Recent, Frequent, Saved & recipes, and More ways sections.
@@ -107,6 +72,9 @@ class FoodSearchRecentList extends StatelessWidget {
   final bool loadingRecent;
   final String? recentFailureMessage;
   final VoidCallback onRetryRecent;
+
+  /// "Log your first meal" when Recent is empty: focuses the search box.
+  final VoidCallback? onSearchFoods;
   final List<CanonicalRecentFood> canonicalRecentResults;
   final List<FoodItem> recentResults;
   final Widget Function(BuildContext context, CanonicalRecentFood recent)
@@ -132,6 +100,7 @@ class FoodSearchRecentList extends StatelessWidget {
     required this.loadingRecent,
     this.recentFailureMessage,
     required this.onRetryRecent,
+    this.onSearchFoods,
     required this.canonicalRecentResults,
     required this.recentResults,
     required this.canonicalRecentItemBuilder,
@@ -244,9 +213,14 @@ class FoodSearchRecentList extends StatelessWidget {
             ),
           )
         else if (canonicalRecentResults.isEmpty && recentResults.isEmpty)
-          const FoodSearchLandingEmpty(
+          ProductEmptyState(
+            key: const Key('food_search_recent_empty'),
+            art: UiArt.mealLunch,
             title: 'No recent foods yet',
-            message: 'Foods you log will appear here.',
+            message: 'Foods you log will show here, ready to log again.',
+            action: onSearchFoods,
+            actionLabel: onSearchFoods == null ? null : 'Log your first meal',
+            actionIcon: Icons.search_rounded,
           )
         else
           ...canonicalRecentResults.map(

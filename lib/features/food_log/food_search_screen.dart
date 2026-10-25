@@ -1937,6 +1937,7 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
       loadingRecent: _loadingRecent,
       recentFailureMessage: _recentFailureMessage,
       onRetryRecent: _retryRecentFoods,
+      onSearchFoods: _searchFocusNode.requestFocus,
       canonicalRecentResults: _canonicalRecentResults,
       recentResults: _recentResults,
       canonicalRecentItemBuilder: (context, recent) =>

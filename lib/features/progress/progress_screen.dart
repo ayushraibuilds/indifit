@@ -295,51 +295,18 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Semantics(
-                container: true,
-                label:
-                    'Your progress starts here. Complete a workout or log a weigh-in to start seeing useful trends.',
-                child: B05Surface(
-                  tone: B05SurfaceTone.inset,
-                  padding: const EdgeInsets.all(B05Layout.space24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.auto_graph_rounded,
-                        color: context.b05Colors.action,
-                        size: 32,
-                      ),
-                      const SizedBox(height: B05Layout.space16),
-                      Text(
-                        'Your progress starts here',
-                        style: B05Typography.title(context),
-                      ),
-                      const SizedBox(height: B05Layout.space4),
-                      Text(
-                        'Complete a workout or log a weigh-in to start seeing useful trends.',
-                        style: B05Typography.body(context),
-                      ),
-                      const SizedBox(height: B05Layout.space20),
-                      B05ActionGroup(
-                        children: [
-                          B05ActionButton(
-                            label: 'Log weight',
-                            icon: Icons.scale_rounded,
-                            onPressed: () => _logWeight(snapshot),
-                          ),
-                          B05ActionButton(
-                            label: 'Start workout',
-                            icon: Icons.fitness_center_rounded,
-                            emphasis: B05ActionEmphasis.secondary,
-                            onPressed: _startWorkout,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
+              ProductEmptyState(
+                key: const Key('progress_empty'),
+                icon: Icons.auto_graph_rounded,
+                title: 'Your progress starts here',
+                message:
+                    'Your workouts, bests and weight trend will show here.',
+                action: _startWorkout,
+                actionLabel: 'Start a workout',
+                actionIcon: Icons.fitness_center_rounded,
+                secondaryAction: () => _logWeight(snapshot),
+                secondaryActionLabel: 'Log weight',
+                secondaryActionIcon: Icons.scale_rounded,
               ),
               const SizedBox(height: B05Layout.space16),
               _buildCheckInRow(context),

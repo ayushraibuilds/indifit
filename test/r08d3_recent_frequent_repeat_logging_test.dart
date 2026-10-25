@@ -867,7 +867,10 @@ void main() {
         await _settleD3(tester);
 
         expect(find.text('No recent foods yet'), findsOneWidget);
-        expect(find.text('Foods you log will appear here.'), findsOneWidget);
+        expect(
+          find.text('Foods you log will show here, ready to log again.'),
+          findsOneWidget,
+        );
       },
     );
 
