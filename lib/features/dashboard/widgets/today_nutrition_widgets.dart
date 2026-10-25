@@ -15,9 +15,11 @@ import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../today_consumer_presentation.dart';
 import '../today_presentation_types.dart';
 import '../today_surface_controller.dart';
+import '../what_can_i_eat.dart';
 import 'today_helpers.dart';
 import 'today_module_widgets.dart';
 import 'today_motion.dart';
+import 'what_can_i_eat_sheet.dart';
 
 /// Today nutrition widgets (PV1-ENG-05B first pass).
 ///
@@ -321,6 +323,7 @@ class _TodayNutritionHeroBody extends StatelessWidget {
                   onPressed: onLogFood,
                 ),
                 TodayMealIdeasAction(
+                  presentation: presentation,
                   dateRelation: dateRelation,
                   selectedDate: selectedDate,
                   onOpenFoodGuidance: onOpenFoodGuidance,
@@ -419,6 +422,7 @@ class TodaySparseNutritionModule extends StatelessWidget {
                   onPressed: onLogFood,
                 ),
                 TodayMealIdeasAction(
+                  presentation: presentation,
                   dateRelation: dateRelation,
                   selectedDate: selectedDate,
                   onOpenFoodGuidance: onOpenFoodGuidance,
@@ -441,13 +445,18 @@ class TodaySparseNutritionModule extends StatelessWidget {
 class TodayMealIdeasAction extends ConsumerStatefulWidget {
   const TodayMealIdeasAction({
     super.key,
+    required this.presentation,
     required this.dateRelation,
     required this.selectedDate,
     required this.onOpenFoodGuidance,
   });
 
+  final TodayNutritionPresentation presentation;
   final TodayDateRelation dateRelation;
   final DateTime selectedDate;
+
+  /// Opens the coaching card's meal ideas; offered inside the sheet when
+  /// it has one ready.
   final VoidCallback? onOpenFoodGuidance;
 
   @override
@@ -460,11 +469,33 @@ class TodayMealIdeasActionState extends ConsumerState<TodayMealIdeasAction> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.dateRelation != TodayDateRelation.today ||
-        widget.onOpenFoodGuidance == null) {
+    // "What can I eat?" (TF-2 A) is about what is left today.
+    if (widget.dateRelation != TodayDateRelation.today) {
       return const SizedBox.shrink();
     }
 
+    final ideasReady =
+        widget.onOpenFoodGuidance != null && _coachingIdeasReady();
+
+    return B05ActionButton(
+      key: const ValueKey('today_what_can_i_eat'),
+      label: 'What can I eat?',
+      icon: Icons.lightbulb_outline_rounded,
+      hint: 'Shows what is left today and foods that fit it.',
+      emphasis: B05ActionEmphasis.secondary,
+      onPressed: () => unawaited(
+        showWhatCanIEatSheet(
+          context,
+          plan: WhatCanIEat.planFor(widget.presentation),
+          day: widget.selectedDate,
+          onMoreIdeas: ideasReady ? widget.onOpenFoodGuidance : null,
+        ),
+      ),
+    );
+  }
+
+  /// Whether the coaching card has a meal idea for today, loading it once.
+  bool _coachingIdeasReady() {
     final contextAsync = ref.watch(b04ProductionRecommendationContextProvider);
     final currentFoodContext = contextAsync.isLoading || contextAsync.hasError
         ? null
@@ -491,23 +522,13 @@ class TodayMealIdeasActionState extends ConsumerState<TodayMealIdeasAction> {
       });
     }
 
-    final available =
-        contextMatchesDate &&
+    return contextMatchesDate &&
         !needsLoad &&
         todayMealIdeasAreAvailable(
           dateRelation: widget.dateRelation,
           state: currentFoodState,
           expectedLocalDate: expectedLocalDate,
         );
-    if (!available) return const SizedBox.shrink();
-
-    return B05ActionButton(
-      label: 'What can I eat?',
-      icon: Icons.lightbulb_outline_rounded,
-      hint: 'Shows a concise meal suggestion when one is ready.',
-      emphasis: B05ActionEmphasis.secondary,
-      onPressed: widget.onOpenFoodGuidance!,
-    );
   }
 }
 
