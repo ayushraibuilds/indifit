@@ -15,6 +15,7 @@ import '../../data/repositories/nutrition_recipe_log_coordinator.dart';
 import '../../data/repositories/nutrition_recipe_repository.dart';
 import '../dashboard/today_surface_controller.dart';
 import 'nutrition_recipe_editor_screen.dart';
+import 'recipe_pot_split.dart';
 import 'saved_recipe_log_controller.dart';
 
 final _savedRecipeIngredientNameProvider = FutureProvider.autoDispose
@@ -43,6 +44,7 @@ class SavedRecipeLogScreen extends ConsumerStatefulWidget {
 class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
   final _searchController = TextEditingController();
   final _amountController = TextEditingController(text: '1');
+  final _potController = TextEditingController(text: '1');
   final _amountFocus = FocusNode();
   Timer? _searchTimer;
 
@@ -51,6 +53,7 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
     _searchTimer?.cancel();
     _searchController.dispose();
     _amountController.dispose();
+    _potController.dispose();
     _amountFocus.dispose();
     super.dispose();
   }
@@ -379,6 +382,8 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
     }
 
     final hasServing = version.servingDefinition != null;
+    final pot = RecipePotYield.of(version);
+    final potEaten = state.fromPot ? parsePotAmount(state.potEatenText) : null;
     final isPreviewLoading =
         state.status == SavedRecipeLogStatus.loadingPreview;
     final isFinalizing = state.status == SavedRecipeLogStatus.finalizing;
@@ -459,7 +464,9 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          hasServing
+                          pot != null
+                              ? 'This pot makes ${pot.label}'
+                              : hasServing
                               ? 'Makes ${_formatServingCount(version.servingDefinition!.count)} serving${version.servingDefinition!.count.asDouble == 1.0 ? '' : 's'}'
                               : 'Total yield: ${version.yieldQuantity!.amount} ${version.yieldQuantity!.definition.labelFor(version.yieldQuantity!.amount)}',
                           style: const TextStyle(fontWeight: FontWeight.w700),
@@ -546,39 +553,86 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
             spacing: 8,
             runSpacing: 8,
             children: [
+              if (pot != null)
+                ChoiceChip(
+                  key: const Key('recipe_amount_from_pot'),
+                  label: Text('Some of the pot (${pot.unit.label})'),
+                  selected: state.fromPot,
+                  onSelected: isFinalizing
+                      ? null
+                      : (_) => controller.setFromPot(),
+                ),
               _amountChoice(
                 label: 'Whole recipe',
                 kind: NutritionRecipeLogAmountKind.wholeRecipe,
-                selected: state.amountKind,
+                selected: state.fromPot ? null : state.amountKind,
                 enabled: !isFinalizing,
                 onSelected: controller.setAmountKind,
               ),
-              if (hasServing)
+              // A pot weighed in grams counts as one serving: "1 serving"
+              // would log the whole pot.
+              if (hasServing && pot?.unit != RecipePotUnit.grams)
                 _amountChoice(
-                  label: '1 serving',
+                  label: pot?.unit == RecipePotUnit.katori
+                      ? '1 katori'
+                      : '1 serving',
                   kind: NutritionRecipeLogAmountKind.declaredServing,
-                  selected: state.amountKind,
+                  selected: state.fromPot ? null : state.amountKind,
                   enabled: !isFinalizing,
                   onSelected: controller.setAmountKind,
                 ),
               _amountChoice(
                 label: 'Fraction',
                 kind: NutritionRecipeLogAmountKind.fraction,
-                selected: state.amountKind,
+                selected: state.fromPot ? null : state.amountKind,
                 enabled: !isFinalizing,
                 onSelected: controller.setAmountKind,
               ),
               _amountChoice(
                 label: 'Scale',
                 kind: NutritionRecipeLogAmountKind.scalar,
-                selected: state.amountKind,
+                selected: state.fromPot ? null : state.amountKind,
                 enabled: !isFinalizing,
                 onSelected: controller.setAmountKind,
               ),
             ],
           ),
-          if (state.amountKind == NutritionRecipeLogAmountKind.fraction ||
-              state.amountKind == NutritionRecipeLogAmountKind.scalar) ...[
+          if (state.fromPot && pot != null) ...[
+            const SizedBox(height: 12),
+            TextField(
+              key: const Key('recipe_pot_eaten'),
+              controller: _potController,
+              enabled: !isFinalizing,
+              keyboardType: TextInputType.text,
+              decoration: InputDecoration(
+                labelText: 'I ate',
+                suffixText: pot.unit.label,
+                helperText: '1½, 1 1/2 or 1.5',
+                border: const OutlineInputBorder(),
+              ),
+              onChanged: controller.setPotEatenText,
+            ),
+            const SizedBox(height: 8),
+            // The sum on screen: total facts × eaten ÷ pot yield.
+            Text(
+              recipePotSum(
+                pot,
+                potEaten,
+                kcal: state
+                    .preview
+                    ?.calculation
+                    .facts['energy']
+                    ?.point
+                    ?.value
+                    .asDouble,
+              ),
+              key: const Key('recipe_pot_sum'),
+              style: TextStyle(color: context.b05Colors.textSecondary),
+            ),
+          ],
+          if (!state.fromPot &&
+              (state.amountKind == NutritionRecipeLogAmountKind.fraction ||
+                  state.amountKind == NutritionRecipeLogAmountKind.scalar)) ...[
             const SizedBox(height: 12),
             TextField(
               controller: _amountController,
@@ -672,10 +726,22 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
     );
   }
 
+  String _amountLabel(
+    NutritionRecipeLogPreview preview,
+    SavedRecipeLogState state,
+  ) {
+    final version = state.selectedVersion;
+    final pot = version == null ? null : RecipePotYield.of(version);
+    final eaten = state.fromPot ? parsePotAmount(state.potEatenText) : null;
+    return pot != null && eaten != null
+        ? pot.amountLabel(eaten)
+        : preview.amount.displayLabel;
+  }
+
   Widget _amountChoice({
     required String label,
     required NutritionRecipeLogAmountKind kind,
-    required NutritionRecipeLogAmountKind selected,
+    required NutritionRecipeLogAmountKind? selected,
     required bool enabled,
     required ValueChanged<NutritionRecipeLogAmountKind> onSelected,
   }) => ChoiceChip(
@@ -704,7 +770,7 @@ class _SavedRecipeLogScreenState extends ConsumerState<SavedRecipeLogScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Nutrition for ${preview.amount.displayLabel}',
+                    'Nutrition for ${_amountLabel(preview, state)}',
                     style: const TextStyle(fontWeight: FontWeight.w800),
                   ),
                 ),

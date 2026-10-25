@@ -79,6 +79,10 @@ class NutritionRecipeSource {
   final String? servingDefinitionId;
   final String? servingDefinitionRevision;
   final String? servingDefinitionSource;
+
+  /// What one serving is when the pot is counted in a vessel ("katori",
+  /// UF-8); null for plain servings.
+  final String? servingDefinitionUnit;
   final String? note;
 
   const NutritionRecipeSource({
@@ -89,8 +93,11 @@ class NutritionRecipeSource {
     this.servingDefinitionId,
     this.servingDefinitionRevision,
     this.servingDefinitionSource,
+    this.servingDefinitionUnit,
     this.note,
   });
+
+  static const Object _unsetUnit = Object();
 
   NutritionRecipeSource copyWith({
     NutritionRecipeSourceKind? kind,
@@ -100,6 +107,7 @@ class NutritionRecipeSource {
     String? servingDefinitionId,
     String? servingDefinitionRevision,
     String? servingDefinitionSource,
+    Object? servingDefinitionUnit = _unsetUnit,
     String? note,
   }) => NutritionRecipeSource(
     kind: kind ?? this.kind,
@@ -111,6 +119,9 @@ class NutritionRecipeSource {
         servingDefinitionRevision ?? this.servingDefinitionRevision,
     servingDefinitionSource:
         servingDefinitionSource ?? this.servingDefinitionSource,
+    servingDefinitionUnit: identical(servingDefinitionUnit, _unsetUnit)
+        ? this.servingDefinitionUnit
+        : servingDefinitionUnit as String?,
     note: note ?? this.note,
   );
 
@@ -127,6 +138,8 @@ class NutritionRecipeSource {
       'serving_definition_revision': servingDefinitionRevision,
     if (servingDefinitionSource != null)
       'serving_definition_source': servingDefinitionSource,
+    if (servingDefinitionUnit != null)
+      'serving_definition_unit': servingDefinitionUnit,
     if (note != null) 'note': note,
   });
 
@@ -145,6 +158,7 @@ class NutritionRecipeSource {
       final servingId = map['serving_definition_id'];
       final servingRevision = map['serving_definition_revision'];
       final servingSource = map['serving_definition_source'];
+      final servingUnit = map['serving_definition_unit'];
       final note = map['note'];
       if (kind is! String ||
           parent is! String? && parent != null ||
@@ -153,6 +167,7 @@ class NutritionRecipeSource {
           servingId is! String? && servingId != null ||
           servingRevision is! String? && servingRevision != null ||
           servingSource is! String? && servingSource != null ||
+          servingUnit is! String? && servingUnit != null ||
           note is! String? && note != null) {
         throw const NutritionRecipeValidationError(
           'malformed_recipe_source',
@@ -167,6 +182,7 @@ class NutritionRecipeSource {
         servingDefinitionId: servingId as String?,
         servingDefinitionRevision: servingRevision as String?,
         servingDefinitionSource: servingSource as String?,
+        servingDefinitionUnit: servingUnit as String?,
         note: note as String?,
       );
     } on NutritionRecipeException {
@@ -188,11 +204,16 @@ class NutritionRecipeServingDefinition {
   final QuantityAmount count;
   final String? source;
 
+  /// What one counted serving is: "katori" when the pot is measured in
+  /// katoris (UF-8), null for plain servings.
+  final String? unit;
+
   const NutritionRecipeServingDefinition({
     required this.id,
     required this.revision,
     required this.count,
     this.source,
+    this.unit,
   });
 
   void validate() {
@@ -605,6 +626,7 @@ class NutritionRecipeRepository {
                   current.calcRuleVersion,
               count: QuantityAmount.fromNum(current.servingQuantity!),
               source: currentSource.servingDefinitionSource,
+              unit: currentSource.servingDefinitionUnit,
             );
       final yieldQuantity = _quantityFromStored(
         current.yieldQuantity,
@@ -702,6 +724,7 @@ class NutritionRecipeRepository {
                 sourceVersion.calcRuleVersion,
             count: QuantityAmount.fromNum(sourceVersion.servingQuantity!),
             source: currentSource.servingDefinitionSource,
+            unit: currentSource.servingDefinitionUnit,
           );
     return createDraft(
       userId: userId,
@@ -753,15 +776,20 @@ class NutritionRecipeRepository {
     NutritionRecipeServingDefinition? servingDefinition,
     String? calculationRuleVersion,
     Iterable<NutritionRecipeIngredientInput>? ingredients,
+
+    /// Drops the stored yield ("this pot makes 900 g") when the pot is
+    /// counted in servings or katoris instead (UF-8).
+    bool clearYield = false,
   }) async {
     return _db.transaction(() async {
       final recipe = await _requireRecipe(recipeId);
       final version = await _requireVersion(draftVersionId);
       _assertOwnedDraft(recipe, version);
       final source = NutritionRecipeSource.decode(version.source);
-      final nextYield =
-          yieldQuantity ??
-          _quantityFromStored(version.yieldQuantity, version.yieldUnit);
+      final nextYield = clearYield
+          ? null
+          : yieldQuantity ??
+                _quantityFromStored(version.yieldQuantity, version.yieldUnit);
       final currentServing = version.servingQuantity == null
           ? null
           : NutritionRecipeServingDefinition(
@@ -770,6 +798,7 @@ class NutritionRecipeRepository {
                   source.servingDefinitionRevision ?? version.calcRuleVersion,
               count: QuantityAmount.fromNum(version.servingQuantity!),
               source: source.servingDefinitionSource,
+              unit: source.servingDefinitionUnit,
             );
       final nextServing = servingDefinition ?? currentServing;
       final nextRule = calculationRuleVersion ?? version.calcRuleVersion;
@@ -777,6 +806,9 @@ class NutritionRecipeRepository {
         servingDefinitionId: nextServing?.id,
         servingDefinitionRevision: nextServing?.revision,
         servingDefinitionSource: nextServing?.source,
+        servingDefinitionUnit: nextServing == null
+            ? source.servingDefinitionUnit
+            : nextServing.unit,
       );
       _validateVersionInputs(
         yieldQuantity: nextYield,
@@ -1144,6 +1176,7 @@ class NutritionRecipeRepository {
             servingDefinitionId: servingDefinition.id,
             servingDefinitionRevision: servingDefinition.revision,
             servingDefinitionSource: servingDefinition.source,
+            servingDefinitionUnit: servingDefinition.unit,
           );
     await _db
         .into(_db.nutritionRecipeVersions)

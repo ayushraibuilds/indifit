@@ -149,6 +149,7 @@ class NutritionRecipeGraphMapper {
                 source.servingDefinitionRevision ?? version.calcRuleVersion,
             count: QuantityAmount.fromNum(version.servingQuantity!),
             source: source.servingDefinitionSource,
+            unit: source.servingDefinitionUnit,
           );
     return NutritionRecipeVersionModel(
       id: version.id,

@@ -283,7 +283,7 @@ void main() {
         expect(find.text('Add recipe'), findsOneWidget);
         expect(find.text('High Protein Moong Dal'), findsOneWidget);
         expect(find.text('Comforting yellow lentil soup'), findsOneWidget);
-        expect(find.text('Makes 4 servings'), findsOneWidget);
+        expect(find.text('This pot makes 4 servings'), findsOneWidget);
         expect(find.text('Ingredients'), findsOneWidget);
         expect(find.text('(2)'), findsOneWidget);
         expect(find.text('Moong Dal'), findsOneWidget);
@@ -740,7 +740,7 @@ void main() {
           find.text('Cooking notes & instructions (optional)'),
           findsOneWidget,
         );
-        expect(find.text('Declared servings (Yield)'), findsOneWidget);
+        expect(find.text('This pot makes'), findsOneWidget);
         expect(find.text('Ingredients'), findsOneWidget);
         expect(find.text('Save draft'), findsOneWidget);
         expect(find.text('Publish recipe'), findsOneWidget);

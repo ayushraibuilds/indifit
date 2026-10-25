@@ -11,6 +11,7 @@ import '../../core/widgets/indi_fit_feedback.dart';
 import '../../data/repositories/nutrition_food_catalog_repository.dart';
 import '../../data/repositories/nutrition_recipe_repository.dart';
 import 'nutrition_recipe_editor_controller.dart';
+import 'recipe_pot_split.dart';
 
 class NutritionRecipeEditorScreen extends ConsumerStatefulWidget {
   final String? recipeId;
@@ -129,16 +130,41 @@ class _NutritionRecipeEditorScreenState
             onChanged: controller.setDescription,
           ),
           const SizedBox(height: 12),
+          // UF-8: what the whole pot cooks into, so a portion can be logged
+          // as "I ate 1½ katori".
+          Text('This pot makes', style: Theme.of(context).textTheme.titleSmall),
+          const SizedBox(height: 8),
           TextField(
+            key: const Key('recipe_pot_amount'),
             controller: _servingCountController,
             enabled: !busy,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(
-              labelText: 'Declared servings (Yield)',
-              helperText: 'Number of servings this recipe makes when cooked.',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              labelText: switch (state.potUnit) {
+                RecipePotUnit.katori => 'Katori',
+                RecipePotUnit.servings => 'Servings',
+                RecipePotUnit.grams => 'Total grams',
+              },
+              helperText: 'How much the whole recipe makes when cooked.',
+              border: const OutlineInputBorder(),
             ),
             onChanged: controller.setServingCount,
+          ),
+          const SizedBox(height: 8),
+          SegmentedButton<RecipePotUnit>(
+            key: const Key('recipe_pot_unit'),
+            segments: const [
+              ButtonSegment(value: RecipePotUnit.katori, label: Text('Katori')),
+              ButtonSegment(
+                value: RecipePotUnit.servings,
+                label: Text('Servings'),
+              ),
+              ButtonSegment(value: RecipePotUnit.grams, label: Text('Grams')),
+            ],
+            selected: {state.potUnit},
+            onSelectionChanged: busy
+                ? null
+                : (picked) => controller.setPotUnit(picked.single),
           ),
           const SizedBox(height: 20),
           if (state.errorMessage != null)
