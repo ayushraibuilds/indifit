@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +9,7 @@ import '../../data/database/app_database.dart';
 import '../../data/repositories/health_service.dart';
 import '../capabilities/capabilities_registry.dart';
 import '../config/app_config.dart';
+import '../privacy/network_receipt.dart';
 import '../privacy/privacy_policy.dart';
 import '../services/app_preferences_service.dart';
 import '../services/civil_date_revision_notifier.dart';
@@ -132,6 +135,21 @@ class PrivacyNetworkInterceptor extends Interceptor {
       );
       return;
     }
+    // UF-21: what went out and when, by kind; nothing of the request.
+    final kind = networkCallKindFor(options.uri);
+    if (kind != null) unawaited(NetworkReceipt.record(kind));
     handler.next(options);
   }
+}
+
+/// The receipt kind of a request through [PrivacyNetworkInterceptor]: food
+/// search and barcode (backend or Open Food Facts) and AI. Other calls are
+/// recorded where they are made.
+NetworkCallKind? networkCallKindFor(Uri uri) {
+  final path = uri.path.toLowerCase();
+  if (path.contains('/api/ai')) return NetworkCallKind.ai;
+  if (path.contains('/api/food') || uri.host.contains('openfoodfacts')) {
+    return NetworkCallKind.foodLookup;
+  }
+  return null;
 }

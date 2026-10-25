@@ -17,6 +17,7 @@ import '../../../core/services/crash_reporting_service.dart';
 import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../onboarding/onboarding_screen.dart';
+import '../network_activity_screen.dart';
 import '../settings_controller.dart';
 import 'ai_consent_toggle.dart';
 import 'backup_export_flow.dart';
@@ -687,6 +688,24 @@ class DataManagementSection extends ConsumerWidget {
         PrivacyDisclosureCard(
           offlineOnly: state.offlineOnly,
           crashReportingEnabled: state.crashReportingEnabled,
+        ),
+        const SizedBox(height: B05Layout.space12),
+        // UF-21: what goes out, and when it last did.
+        B05Surface(
+          tone: B05SurfaceTone.interactive,
+          padding: EdgeInsets.zero,
+          child: ListTile(
+            key: const Key('manage_data_network_activity'),
+            leading: const Icon(Icons.swap_vert_rounded),
+            title: const Text('Network activity'),
+            subtitle: const Text('What IndiFit sends, and when it last did'),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const NetworkActivityScreen(),
+              ),
+            ),
+          ),
         ),
         const SizedBox(height: B05Layout.space24),
 

@@ -57,6 +57,8 @@ final openFoodFactsDioProvider = Provider<Dio>((ref) {
       headers: const {'User-Agent': kOpenFoodFactsUserAgent},
     ),
   );
+  // Offline Mode blocks it, and the data receipt sees it (UF-21).
+  dio.interceptors.add(PrivacyNetworkInterceptor(ref));
   ref.onDispose(() => dio.close(force: true));
   return dio;
 });
