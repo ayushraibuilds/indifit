@@ -1,8 +1,23 @@
 {
   "format": 1,
-  "latest": 6,
+  "latest": 7,
   "min_app_build": 1,
   "packs": [
+    {
+      "bytes": 34794,
+      "kind": "full",
+      "sha256": "9d943ce1808a64a2e31164ac0b715e8df450f23fc441d24477224d91beac22f8",
+      "url": "v7/7.json.gz",
+      "version": 7
+    },
+    {
+      "base": 6,
+      "bytes": 570,
+      "kind": "delta",
+      "sha256": "5d90334146941b7ac9c42d3bf0a7e0f1b59eaefd57cd4fb7e2c1f0641671971a",
+      "url": "v7/7-from-6.json.gz",
+      "version": 7
+    },
     {
       "bytes": 34708,
       "kind": "full",

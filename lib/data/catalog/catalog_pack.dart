@@ -16,7 +16,7 @@ const int kCatalogPackFormat = 1;
 /// The pack bundled with this app build. A device without a catalogue state
 /// at or above this version applies it on create, upgrade or next open.
 /// Pack 2 is built by tool/catalog/build.py (CAT-5, CAT-6).
-const int kBundledCatalogPackVersion = 6;
+const int kBundledCatalogPackVersion = 7;
 const String kBundledCatalogManifestAsset = 'assets/catalog/manifest.json';
 const String kBundledCatalogAssetDirectory = 'assets/catalog/';
 

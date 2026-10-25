@@ -1,0 +1,2 @@
+id,name,name_hindi,category,basis,serving_unit,serving_amount,serving_grams,kcal,protein_g,carbs_g,fat_g,fibre_g,aliases,usda_basis,fdc_ids
+food-usda-0306,"Black Tea (no milk, no sugar)",काली चाय,Beverages,per_100_millilitres,ml,150,,1.00,0.00,0.30,0.00,0.00,black tea|kali chai|kaali chai|tea without milk,"SR Legacy 173227 Beverages, tea, black, brewed, prepared with tap water (default 150 ml, the app's chai cup; 1 g taken as 1 ml)",173227

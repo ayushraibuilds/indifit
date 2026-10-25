@@ -12,18 +12,24 @@ import '../../data/repositories/nutrition_recipe_log_coordinator.dart';
 import '../../data/repositories/nutrition_recipe_repository.dart';
 
 /// The milk in My chai: catalogue foods measured per 100 ml (pack 6,
-/// usda-ingredients-v1).
+/// usda-ingredients-v1), or none: the cup is black tea (pack 7,
+/// usda-ingredients-v2).
 enum MyChaiMilk {
   fullCream('full_cream', 'Full cream', 'food-usda-0302'),
   toned('toned', 'Toned', 'food-usda-0303'),
   doubleToned('double_toned', 'Double toned', 'food-usda-0304'),
-  skimmed('skimmed', 'Skimmed', 'food-usda-0305');
+  skimmed('skimmed', 'Skimmed', 'food-usda-0305'),
+  none('none', 'No milk (black tea)', kMyChaiBlackTeaFoodId);
 
   const MyChaiMilk(this.stableId, this.label, this.foodId);
 
   final String stableId;
   final String label;
+
+  /// The milk, or the black tea that fills the cup for [none].
   final String foodId;
+
+  bool get isDairy => this != none;
 
   static MyChaiMilk? fromStableId(String? id) {
     for (final milk in values) {
@@ -55,6 +61,9 @@ enum MyChaiMilkShare {
   }
 }
 
+/// Black tea brewed with tap water, per 100 ml (SR Legacy 173227).
+const String kMyChaiBlackTeaFoodId = 'food-usda-0306';
+
 /// The catalogue sugar (food-usda-0301) and SR Legacy's own teaspoon.
 const String kMyChaiSugarFoodId = 'food-usda-0301';
 const double kSugarGramsPerTeaspoon = 4.2;
@@ -84,12 +93,16 @@ class MyChaiSettings {
   final int cupMillilitres;
 
   double get milkMillilitres =>
-      cupMillilitres * milkShare.numerator / milkShare.of;
+      milk.isDairy ? cupMillilitres * milkShare.numerator / milkShare.of : 0;
 
   double get sugarGrams => sugarTeaspoons * kSugarGramsPerTeaspoon;
 
   /// "75 ml toned milk + 1 tsp sugar (4.2 g), topped up with tea to 150 ml".
   String get recipeLine {
+    final sugarLine = sugarTeaspoons == 0
+        ? 'no sugar'
+        : '${_number(sugarTeaspoons)} tsp sugar (${_number(sugarGrams)} g)';
+    if (!milk.isDairy) return '$cupMillilitres ml black tea + $sugarLine';
     final milkPart =
         '${_number(milkMillilitres)} ml ${milk.label.toLowerCase()} milk';
     final sugarPart = sugarTeaspoons == 0
@@ -179,11 +192,12 @@ class MyChaiRecipe {
   String _id(String kind) => '$kMyChaiRecipePrefix$kind::${const Uuid().v4()}';
 
   List<NutritionRecipeIngredientInput> _ingredients(MyChaiSettings chai) => [
+    // No milk: the whole cup is the catalogue's black tea.
     NutritionRecipeIngredientInput.directFood(
-      id: _id('milk'),
+      id: _id(chai.milk.isDairy ? 'milk' : 'tea'),
       foodId: chai.milk.foodId,
       quantity: Quantity.fromNum(
-        amount: chai.milkMillilitres,
+        amount: chai.milk.isDairy ? chai.milkMillilitres : chai.cupMillilitres,
         unit: QuantityUnit.millilitre,
       ),
       position: 0,
@@ -308,9 +322,10 @@ final myChaiSettingsProvider = Provider<MyChaiSettings?>((ref) {
   return prefs == null ? null : MyChaiSettings.read(prefs);
 });
 
-/// Whether "+ Chai" fits [diet] (R-10): My chai is made with dairy milk,
-/// so a vegan diet isn't offered it.
-bool myChaiFitsDiet(String? diet) => diet?.trim().toLowerCase() != 'vegan';
+/// Whether "+ Chai" fits [diet] (R-10): a vegan diet is offered [chai]
+/// only when it has no milk.
+bool myChaiFitsDiet(String? diet, {MyChaiSettings? chai}) =>
+    diet?.trim().toLowerCase() != 'vegan' || chai?.milk == MyChaiMilk.none;
 
 /// The My chai that "+ Chai" logs on Today and in search: the saved chai
 /// when it fits the person's diet, else null.
@@ -323,7 +338,7 @@ final offeredMyChaiProvider = Provider<MyChaiSettings?>((ref) {
   } catch (_) {
     // Safe: without a profile the diet is unknown and the chai is offered.
   }
-  return myChaiFitsDiet(diet) ? chai : null;
+  return myChaiFitsDiet(diet, chai: chai) ? chai : null;
 });
 
 final myChaiRecipeProvider = FutureProvider<MyChaiRecipe>(
