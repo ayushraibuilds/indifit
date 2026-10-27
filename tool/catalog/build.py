@@ -48,7 +48,7 @@ SPOTCHECK_SEED = 20261007
 SPOTCHECK_VERSION = 4
 
 FORMAT = 1
-LATEST = 7
+LATEST = 8
 MIN_APP_BUILD = 1
 SOURCE_ID = "indifit-catalogue-v1"
 
@@ -93,6 +93,22 @@ INGREDIENTS_V2_SOURCE = {
     "attribution": "USDA FoodData Central, SR Legacy",
     "review": "unreviewed",
 }
+# Pack 8 adds vrat (fasting) foods: sources/usda-vrat-v1/.
+VRAT = CATALOG / "sources/usda-vrat-v1/foods.csv"
+VRAT_VERSION = 8
+VRAT_SOURCE = {
+    "id": "usda-vrat-v1",
+    "licence": "CC0-1.0",
+    "attribution": "USDA FoodData Central, SR Legacy",
+    "review": "unreviewed",
+}
+# From pack 8 dishes carry `key_ingredients` (TF-2 C): words from
+# key_ingredients.yaml, derived from a USDA recipe's ingredients or authored
+# for IndiFit's dishes (overlays/0009_key_ingredients.yaml).
+KEY_INGREDIENTS = CATALOG / "key_ingredients.yaml"
+KEY_INGREDIENTS_VERSION = 8
+KEY_INGREDIENTS_MAX = 6
+RECIPE_PART = re.compile(r"^([a-z_]+) ([\d.]+) g$")
 # From pack 5 a label may hold one pair of brackets itself: "Dhaba Style
 # (High oil)" (UR-06). Earlier packs keep the plain pattern, so they rebuild
 # byte for byte.
@@ -411,6 +427,43 @@ def _alias_key(text):
     return re.sub(r"\s+", " ", re.sub(r"[^\w\s]", " ", text.lower())).strip()
 
 
+def recipe_key_ingredients(basis, vocabulary=None):
+    """The key ingredients of a USDA recipe, from its `usda_basis`.
+
+    "recipe: paneer 200 g; oil 25 g; capsicum 60 g; cooked 380 g (…)" ->
+    [paneer, capsicum]: pantry staples dropped, the rest by weight, heaviest
+    first, at most six. None for a single food, or a recipe with fewer than
+    two key ingredients.
+    """
+    if not basis.startswith("recipe: "):
+        return None
+    vocabulary = vocabulary or load_yaml(KEY_INGREDIENTS)
+    grams = {}
+    for part in basis[len("recipe: "):].split("; "):
+        match = RECIPE_PART.match(part.strip())
+        if match is None or match.group(1) == "cooked":
+            break  # "cooked 380 g (…)" ends the ingredients
+        key = match.group(1)
+        if key in vocabulary["pantry"]:
+            continue
+        word = vocabulary["recipe_words"].get(key)
+        if word is None:
+            raise BuildError(f"recipe ingredient {key!r} has no word in key_ingredients.yaml")
+        grams[word] = grams.get(word, 0) + float(match.group(2))
+    words = sorted(grams, key=lambda w: -grams[w])[:KEY_INGREDIENTS_MAX]
+    return words if len(words) >= 2 else None
+
+
+def key_ingredients_asset():
+    """assets/catalog/key_ingredients.json: the vocabulary the app matches."""
+    vocabulary = load_yaml(KEY_INGREDIENTS)["vocabulary"]
+    data = {
+        "version": LATEST,
+        "vocabulary": {word: sorted(names) for word, names in sorted(vocabulary.items())},
+    }
+    return (json.dumps(data, ensure_ascii=False, indent=1, sort_keys=True) + "\n").encode()
+
+
 def staple_foods(
     existing, path=STAPLES, version=STAPLES_VERSION, source=STAPLES_SOURCE
 ):
@@ -457,23 +510,26 @@ def staple_foods(
         for text in per_row(row):
             if taken[_alias_key(text)] == 1:
                 aliases.append({"text": text, "locale": "hi-Latn"})
-        foods.append(
-            {
-                "id": row["id"],
-                "display_name": row["name"],
-                "kind": "canonical",
-                "variant_of": None,
-                "variant_label": None,
-                "tags": [],
-                "lifecycle": "active",
-                "source_ref": f"{source['id']}:{row['name'].lower()}",
-                "category": row["category"],
-                "source_id": source["id"],
-                "facts": {"basis": row["basis"], "values": values},
-                "servings": [serving],
-                "aliases": aliases,
-            }
-        )
+        food = {
+            "id": row["id"],
+            "display_name": row["name"],
+            "kind": "canonical",
+            "variant_of": None,
+            "variant_label": None,
+            "tags": [],
+            "lifecycle": "active",
+            "source_ref": f"{source['id']}:{row['name'].lower()}",
+            "category": row["category"],
+            "source_id": source["id"],
+            "facts": {"basis": row["basis"], "values": values},
+            "servings": [serving],
+            "aliases": aliases,
+        }
+        if version >= KEY_INGREDIENTS_VERSION:
+            words = recipe_key_ingredients(row["usda_basis"])
+            if words:
+                food["key_ingredients"] = words
+        foods.append(food)
     return foods
 
 
@@ -514,6 +570,12 @@ def build_pack(version, rows=None, overlay_dir=OVERLAYS, apply_fixes=True):
             key=lambda food: food["id"],
         )
         sources.append(dict(INGREDIENTS_V2_SOURCE))
+    if version >= VRAT_VERSION:
+        foods = sorted(
+            foods + staple_foods(foods, VRAT, version, VRAT_SOURCE),
+            key=lambda food: food["id"],
+        )
+        sources.append(dict(VRAT_SOURCE))
     if version >= STAPLES_VERSION:
         by_id = {food["id"]: food for food in foods}
         for name, data in load_overlays(version, overlay_dir):
@@ -524,6 +586,16 @@ def build_pack(version, rows=None, overlay_dir=OVERLAYS, apply_fixes=True):
                     by_id[food_id]["aliases"].append(
                         {"text": text, "locale": data["extra_aliases_locale"]}
                     )
+            for entry in data.get("key_ingredients") or []:
+                food = by_id.get(entry["id"])
+                if food is None:
+                    raise BuildError(f"{name}: unknown id {entry['id']}")
+                if food["display_name"] != entry["name"]:
+                    raise BuildError(
+                        f"{name}: {entry['id']} is {food['display_name']!r}, "
+                        f"not {entry['name']!r}"
+                    )
+                food["key_ingredients"] = list(entry["words"])
     return {
         "format": FORMAT,
         "version": version,
@@ -679,6 +751,8 @@ def build_outputs():
     outputs[ASSETS / "manifest.json"] = _manifest_text(
         LATEST, [_entry(packs[LATEST], bundled_url, bundled)]
     ).encode()
+    if LATEST >= KEY_INGREDIENTS_VERSION:
+        outputs[ASSETS / "key_ingredients.json"] = key_ingredients_asset()
     outputs[SPOTCHECK] = spotcheck_csv(packs[SPOTCHECK_VERSION]).encode()
     return outputs, packs
 

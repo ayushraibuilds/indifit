@@ -365,3 +365,61 @@ class OverlayGuardsTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class KeyIngredientsTest(unittest.TestCase):
+    """Pack 8: key_ingredients (TF-2 C) and the vrat foods."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.pack = build.build_pack(8)
+        cls.by_name = {food["display_name"]: food for food in cls.pack["foods"]}
+        cls.vocabulary = build.load_yaml(build.KEY_INGREDIENTS)["vocabulary"]
+
+    def test_recipe_words_drop_pantry_and_sort_by_weight(self):
+        words = build.recipe_key_ingredients(
+            "recipe: paneer 200 g; oil 25 g; capsicum 60 g; onion 70 g; "
+            "green_chilli 5 g; cooked 380 g (note)"
+        )
+        self.assertEqual(words, ["paneer", "onion", "capsicum"])
+
+    def test_single_foods_and_one_ingredient_recipes_have_none(self):
+        self.assertIsNone(build.recipe_key_ingredients("SR Legacy 173944 Bananas, raw"))
+        self.assertIsNone(build.recipe_key_ingredients("recipe: urad 12 g; cooked 12 g"))
+
+    def test_authored_and_derived_dishes(self):
+        self.assertEqual(
+            self.by_name["Kadai Paneer"]["key_ingredients"],
+            ["paneer", "capsicum", "onion", "tomato"],
+        )
+        self.assertEqual(
+            self.by_name["Sabudana Khichdi"]["key_ingredients"],
+            ["sabudana", "potato", "peanuts"],
+        )
+        self.assertNotIn("key_ingredients", self.by_name["Jeera Aloo"])
+
+    def test_earlier_packs_have_no_key_ingredients(self):
+        pack = build.build_pack(7)
+        self.assertFalse(any("key_ingredients" in food for food in pack["foods"]))
+
+    def test_vrat_foods_are_sourced(self):
+        for name in ("Kuttu Atta (Buckwheat Flour)", "Kuttu Puri", "Vrat Aloo (Sendha Namak)"):
+            self.assertEqual(self.by_name[name]["source_id"], "usda-vrat-v1")
+        self.assertNotIn("Samak Rice (Barnyard Millet)", self.by_name)
+
+    def test_validator_rejects_bad_words(self):
+        pack = copy.deepcopy(self.pack)
+        foods = {food["display_name"]: food for food in pack["foods"]}
+        foods["Kadai Paneer"]["key_ingredients"] = ["Paneer", "capsicum"]
+        foods["Palak Paneer"]["key_ingredients"] = ["spinach"]
+        foods["Rajma Masala (Red Kidney Beans)"]["key_ingredients"] = ["rajma", "unicorn"]
+        details = [
+            v.detail for v in validate.check_key_ingredients(pack, self.vocabulary)
+        ]
+        self.assertEqual(len(details), 3, details)
+        self.assertTrue(any("not lowercase" in d for d in details))
+        self.assertTrue(any("needs 2-6" in d for d in details))
+        self.assertTrue(any("'unicorn' is not in" in d for d in details))
+
+    def test_vocabulary_names_map_to_one_word(self):
+        self.assertEqual(validate.check_key_ingredients({"foods": []}, self.vocabulary), [])

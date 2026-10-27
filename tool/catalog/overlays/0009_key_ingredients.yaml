@@ -1,0 +1,453 @@
+# Key ingredients of IndiFit's own dishes (pack 8, TF-2 C), authored from
+# each dish's standard main ingredients: 2-6 words from
+# tool/catalog/key_ingredients.yaml, no amounts, no pantry staples (oil,
+# salt, spices, water). Unreviewed. Variants share their dish's list in the
+# app, so only the 182 dishes are listed; the ones left out have fewer than
+# two key ingredients or are not one dish:
+#   single foods: Amul Fresh Paneer (Raw), Basmati White Rice (Cooked), Brown
+#     Rice (Cooked), Boiled Eggs, Boiled Sweet Corn, Roasted Chana, the curds,
+#     paneers, milks, Greek Yogurt, Buttermilk, Black Coffee, Green Tea,
+#     Coconut Water, Sugarcane Juice, Nimbu Pani (Salted / Sugar-Free);
+#   one key ingredient (the rest is oil and spices): Achari Aloo, Arbi Tuk,
+#     Jeera Aloo, Kaddu Ki Sabji, Moong Dal Chilka, Urad Dal Plain, Yam Fry,
+#     Raw Papaya and Tindora Sambharo, Stuffed Parwal, Poori and the plain
+#     rotis (whole wheat, tandoori, bajra, jowar, ragi);
+#   combos: Home Thali (Veg), Office Tiffin (Veg).
+version: 8
+review: unreviewed
+key_ingredients:
+  - id: food-seed-0004
+    name: "Aloo Baingan"
+    words: [potato, eggplant, onion, tomato]
+  - id: food-seed-0007
+    name: "Aloo Gajar Mattar"
+    words: [potato, carrot, peas]
+  - id: food-seed-0010
+    name: "Aloo Gobbi (Dry Sabji)"
+    words: [potato, cauliflower, tomato]
+  - id: food-seed-0014
+    name: "Aloo Methi"
+    words: [potato, fenugreek]
+  - id: food-seed-0018
+    name: "Aloo Palak"
+    words: [potato, spinach, onion, tomato]
+  - id: food-seed-0022
+    name: "Aloo Paratha"
+    words: [atta, potato]
+  - id: food-seed-0027
+    name: "Aloo Tamatar Rasedar"
+    words: [potato, tomato]
+  - id: food-seed-0030
+    name: "Aloo Tikki (1 piece)"
+    words: [potato, peas]
+  - id: food-seed-0036
+    name: "Arbi Masala (Colocasia)"
+    words: [colocasia, onion, tomato]
+  - id: food-seed-0040
+    name: "Avial (Kerala Mixed Veg)"
+    words: [raw banana, drumstick, carrot, french beans, coconut, curd]
+  - id: food-seed-0043
+    name: "Baingan Bharta (Roasted eggplant)"
+    words: [eggplant, onion, tomato]
+  - id: food-seed-0056
+    name: "Beans Poriyal"
+    words: [french beans, coconut]
+  - id: food-seed-0059
+    name: "Beetroot Sabji"
+    words: [beetroot, onion]
+  - id: food-seed-0062
+    name: "Bharli Vangi (Stuffed Brinjal)"
+    words: [eggplant, peanuts, coconut, onion]
+  - id: food-seed-0065
+    name: "Bharwa Bhindi"
+    words: [okra, besan]
+  - id: food-seed-0068
+    name: "Bhatura"
+    words: [maida, curd]
+  - id: food-seed-0073
+    name: "Bhel Puri"
+    words: [puffed rice, sev, onion, tomato, potato]
+  - id: food-seed-0076
+    name: "Bhindi Do Pyaza"
+    words: [okra, onion]
+  - id: food-seed-0080
+    name: "Bhindi Masala (Okra)"
+    words: [okra, onion, tomato]
+  - id: food-seed-0086
+    name: "Boiled Chickpea Salad"
+    words: [chickpeas, onion, tomato, cucumber, lemon]
+  - id: food-seed-0098
+    name: "Butter Chicken (Murgh Makhani)"
+    words: [chicken, butter, tomato, cream]
+  - id: food-seed-0101
+    name: "Butter Naan"
+    words: [maida, curd, butter]
+  - id: food-seed-0106
+    name: "Butter Roti / Chapati"
+    words: [atta, butter]
+  - id: food-seed-0114
+    name: "Cabbage Poriyal (South Indian)"
+    words: [cabbage, coconut]
+  - id: food-seed-0115
+    name: "Cabbage Thoran"
+    words: [cabbage, coconut]
+  - id: food-seed-0118
+    name: "Capsicum Besan Sabji"
+    words: [capsicum, besan]
+  - id: food-seed-0119
+    name: "Chana Dal Palak (Spinach & Gram dal)"
+    words: [chana dal, spinach, onion, tomato]
+  - id: food-seed-0122
+    name: "Chana Masala (Black Chickpeas)"
+    words: [black chickpeas, onion, tomato]
+  - id: food-seed-0127
+    name: "Chana Masala Dry (Sookha Chana)"
+    words: [black chickpeas, onion]
+  - id: food-seed-0130
+    name: "Chicken Biryani (Hyderabadi)"
+    words: [chicken, rice, onion, curd]
+  - id: food-seed-0133
+    name: "Chicken Curry (North Indian style)"
+    words: [chicken, onion, tomato]
+  - id: food-seed-0136
+    name: "Chicken Korma"
+    words: [chicken, curd, onion, cashew]
+  - id: food-seed-0139
+    name: "Chicken Tikka (6 pcs)"
+    words: [chicken, curd]
+  - id: food-seed-0142
+    name: "Chole Masala (Chickpea Curry)"
+    words: [chickpeas, onion, tomato]
+  - id: food-seed-0149
+    name: "Corn Palak"
+    words: [corn, spinach, onion]
+  - id: food-seed-0152
+    name: "Cucumber Tomato Salad (Kachumber)"
+    words: [cucumber, tomato, onion, lemon]
+  - id: food-seed-0155
+    name: "Dahi Papdi Chaat (Light)"
+    words: [curd, potato, chickpeas, tamarind]
+  - id: food-seed-0156
+    name: "Dal Fry (Chana & Toor)"
+    words: [chana dal, toor dal, onion, tomato]
+  - id: food-seed-0160
+    name: "Dal Makhani"
+    words: [urad dal, rajma, butter, cream, tomato]
+  - id: food-seed-0164
+    name: "Dhokla (2 pieces)"
+    words: [besan, curd]
+  - id: food-seed-0170
+    name: "Drumstick (Moringa) Curry"
+    words: [drumstick, onion, tomato]
+  - id: food-seed-0171
+    name: "Drumstick Sambar Veg Side"
+    words: [drumstick, toor dal, tamarind]
+  - id: food-seed-0174
+    name: "Dum Aloo"
+    words: [potato, curd, onion, tomato]
+  - id: food-seed-0178
+    name: "Egg Bhurji (2 Eggs)"
+    words: [egg, onion, tomato]
+  - id: food-seed-0181
+    name: "Egg Curry (2 Eggs)"
+    words: [egg, onion, tomato]
+  - id: food-seed-0184
+    name: "Egg White Omelette (3 Eggs)"
+    words: [egg, onion]
+  - id: food-seed-0187
+    name: "Egg White Salad"
+    words: [egg, cucumber, tomato, onion]
+  - id: food-seed-0190
+    name: "Filter Coffee (with sugar)"
+    words: [coffee, milk, sugar]
+  - id: food-seed-0193
+    name: "Fish Curry (Bengali style)"
+    words: [fish, potato, tomato]
+  - id: food-seed-0196
+    name: "Fish Fry (Amritsari)"
+    words: [fish, besan, lemon]
+  - id: food-seed-0199
+    name: "French Beans Foogath"
+    words: [french beans, coconut, onion]
+  - id: food-seed-0203
+    name: "Fruit Chaat"
+    words: [apple, banana, papaya, pomegranate]
+  - id: food-seed-0207
+    name: "Gajar Mattar (Carrot Peas)"
+    words: [carrot, peas]
+  - id: food-seed-0210
+    name: "Garlic Butter Naan"
+    words: [maida, curd, garlic, butter]
+  - id: food-seed-0215
+    name: "Garlic Naan"
+    words: [maida, curd, garlic]
+  - id: food-seed-0220
+    name: "Gobi Masala (Cauliflower)"
+    words: [cauliflower, onion, tomato]
+  - id: food-seed-0223
+    name: "Gobi Matar Dry"
+    words: [cauliflower, peas]
+  - id: food-seed-0224
+    name: "Gobi Paratha"
+    words: [atta, cauliflower]
+  - id: food-seed-0235
+    name: "Grilled Paneer Salad Bowl"
+    words: [paneer, capsicum, onion, tomato, cucumber]
+  - id: food-seed-0236
+    name: "Gujarati Kadhi"
+    words: [curd, besan]
+  - id: food-seed-0238
+    name: "Idli with Sambar (2 Idlis)"
+    words: [rice, urad dal, toor dal, tamarind]
+  - id: food-seed-0244
+    name: "Jeera Rice"
+    words: [rice, ghee]
+  - id: food-seed-0255
+    name: "Kadai Paneer"
+    words: [paneer, capsicum, onion, tomato]
+  - id: food-seed-0261
+    name: "Kadhi Pakora"
+    words: [curd, besan, onion]
+  - id: food-seed-0265
+    name: "Karela Fry (Bitter Gourd)"
+    words: [bitter gourd, onion]
+  - id: food-seed-0268
+    name: "Kashmiri Pulao (with nuts)"
+    words: [rice, cashew, almonds, raisins]
+  - id: food-seed-0273
+    name: "Kathal (Jackfruit) Sabji"
+    words: [jackfruit, onion, tomato]
+  - id: food-seed-0274
+    name: "Kundru (Ivy Gourd) Fry"
+    words: [ivy gourd, onion]
+  - id: food-seed-0275
+    name: "Lachha Paratha"
+    words: [atta, ghee]
+  - id: food-seed-0280
+    name: "Lauki Chana Dal Sabji"
+    words: [bottle gourd, chana dal, tomato]
+  - id: food-seed-0281
+    name: "Lauki Ki Sabji (Bottle Gourd)"
+    words: [bottle gourd, tomato]
+  - id: food-seed-0284
+    name: "Lobia Masala (Black Eyed Peas)"
+    words: [lobia, onion, tomato]
+  - id: food-seed-0294
+    name: "Malai Kofta (2 pcs + gravy)"
+    words: [paneer, potato, cream, cashew, tomato, onion]
+  - id: food-seed-0297
+    name: "Masala Chai (Sugar Free)"
+    words: [tea, milk]
+  - id: food-seed-0300
+    name: "Masala Chai (with milk & sugar)"
+    words: [tea, milk, sugar]
+  - id: food-seed-0303
+    name: "Masala Dosa"
+    words: [rice, urad dal, potato, onion]
+  - id: food-seed-0306
+    name: "Masala Lassi (Sweet)"
+    words: [curd, sugar]
+  - id: food-seed-0309
+    name: "Masala Oats"
+    words: [oats, onion, tomato, carrot, peas]
+  - id: food-seed-0310
+    name: "Masoor Dal / Red Lentil Soup"
+    words: [masoor dal, onion, tomato]
+  - id: food-seed-0315
+    name: "Mattar Paneer"
+    words: [paneer, peas, onion, tomato]
+  - id: food-seed-0318
+    name: "Medu Vada with Sambar (2 Vadas)"
+    words: [urad dal, toor dal, tamarind]
+  - id: food-seed-0321
+    name: "Methi Matar Malai"
+    words: [fenugreek, peas, cream, onion]
+  - id: food-seed-0322
+    name: "Methi Paratha"
+    words: [atta, fenugreek]
+  - id: food-seed-0327
+    name: "Missi Roti (Gram flour)"
+    words: [besan, atta]
+  - id: food-seed-0332
+    name: "Mix Veg Curry (Gravy)"
+    words: [potato, carrot, peas, cauliflower, onion, tomato]
+  - id: food-seed-0335
+    name: "Mix Veg Korma (Coconut South)"
+    words: [carrot, peas, potato, french beans, coconut]
+  - id: food-seed-0336
+    name: "Mix Vegetable Sabji"
+    words: [potato, carrot, peas, cauliflower, french beans]
+  - id: food-seed-0340
+    name: "Mooli Paratha"
+    words: [atta, radish]
+  - id: food-seed-0349
+    name: "Mushroom Masala"
+    words: [mushroom, onion, tomato]
+  - id: food-seed-0352
+    name: "Mushroom Matar Curry"
+    words: [mushroom, peas, onion, tomato]
+  - id: food-seed-0353
+    name: "Mutton Biryani"
+    words: [mutton, rice, onion, curd]
+  - id: food-seed-0356
+    name: "Mutton Rogan Josh"
+    words: [mutton, curd]
+  - id: food-seed-0359
+    name: "Nimbu Pani (Lemonade with sugar)"
+    words: [lemon, sugar]
+  - id: food-seed-0365
+    name: "Oats Upma"
+    words: [oats, onion, carrot, peas]
+  - id: food-seed-0369
+    name: "Onion Pakora (4-5 pieces)"
+    words: [onion, besan]
+  - id: food-seed-0372
+    name: "Onion Tomato Sabji"
+    words: [onion, tomato]
+  - id: food-seed-0375
+    name: "Palak Paneer"
+    words: [spinach, paneer, onion, tomato, cream]
+  - id: food-seed-0378
+    name: "Palak Sabji (Spinach)"
+    words: [spinach, onion]
+  - id: food-seed-0381
+    name: "Paneer Bhurji"
+    words: [paneer, onion, tomato, capsicum]
+  - id: food-seed-0384
+    name: "Paneer Butter Masala"
+    words: [paneer, butter, tomato, cream, cashew]
+  - id: food-seed-0387
+    name: "Paneer Lababdar"
+    words: [paneer, tomato, onion, cream, cashew]
+  - id: food-seed-0393
+    name: "Paneer Pakora (3 pieces)"
+    words: [paneer, besan]
+  - id: food-seed-0396
+    name: "Paneer Paratha"
+    words: [atta, paneer]
+  - id: food-seed-0401
+    name: "Paneer Salad (Olive oil)"
+    words: [paneer, cucumber, tomato]
+  - id: food-seed-0404
+    name: "Paneer Tikka (5 pcs)"
+    words: [paneer, curd, capsicum, onion]
+  - id: food-seed-0407
+    name: "Pani Puri / Golgappa (6 pieces)"
+    words: [suji, potato, chickpeas, tamarind]
+  - id: food-seed-0410
+    name: "Patta Gobhi Sabji (Cabbage)"
+    words: [cabbage, peas]
+  - id: food-seed-0413
+    name: "Pav Bhaji (2 Pavs)"
+    words: [pav, potato, tomato, butter, peas, capsicum]
+  - id: food-seed-0419
+    name: "Plain Dosa with Chutney"
+    words: [rice, urad dal, coconut]
+  - id: food-seed-0422
+    name: "Plain Naan"
+    words: [maida, curd]
+  - id: food-seed-0427
+    name: "Plain Paratha"
+    words: [atta, ghee]
+  - id: food-seed-0432
+    name: "Poha (Flattened Rice)"
+    words: [poha, onion, peanuts, potato]
+  - id: food-seed-0441
+    name: "Quinoa Veg Bowl"
+    words: [quinoa, capsicum, tomato, cucumber]
+  - id: food-seed-0447
+    name: "Raita (Cucumber)"
+    words: [curd, cucumber]
+  - id: food-seed-0449
+    name: "Rajma Masala (Red Kidney Beans)"
+    words: [rajma, onion, tomato]
+  - id: food-seed-0453
+    name: "Rava Dosa"
+    words: [suji, rice flour, maida]
+  - id: food-seed-0456
+    name: "Raw Banana Stir Fry"
+    words: [raw banana, coconut]
+  - id: food-seed-0463
+    name: "Rumali Roti"
+    words: [maida, atta]
+  - id: food-seed-0468
+    name: "Saffron Rice / Pulao"
+    words: [rice, ghee]
+  - id: food-seed-0473
+    name: "Sambar"
+    words: [toor dal, tamarind, drumstick, onion, tomato]
+  - id: food-seed-0477
+    name: "Samosa (1 piece)"
+    words: [maida, potato, peas]
+  - id: food-seed-0480
+    name: "Sarson Ka Saag"
+    words: [mustard greens, spinach]
+  - id: food-seed-0483
+    name: "Sev Tamatar Ki Sabji"
+    words: [sev, tomato, onion]
+  - id: food-seed-0486
+    name: "Shahi Paneer"
+    words: [paneer, cream, cashew, curd, onion]
+  - id: food-seed-0489
+    name: "Shimla Mirch Aloo"
+    words: [capsicum, potato]
+  - id: food-seed-0493
+    name: "Soybean Chunks Curry"
+    words: [soya chunks, onion, tomato]
+  - id: food-seed-0496
+    name: "Sprouted Chana Salad"
+    words: [black chickpeas, onion, tomato, cucumber, lemon]
+  - id: food-seed-0497
+    name: "Sprouted Moong Salad"
+    words: [moong, onion, tomato, cucumber, lemon]
+  - id: food-seed-0501
+    name: "Stuffed Capsicum (Bharwa Shimla)"
+    words: [capsicum, potato]
+  - id: food-seed-0506
+    name: "Suji Upma"
+    words: [suji, onion]
+  - id: food-seed-0509
+    name: "Tandoori Butter Roti"
+    words: [atta, butter]
+  - id: food-seed-0514
+    name: "Tandoori Chicken (Half)"
+    words: [chicken, curd, lemon]
+  - id: food-seed-0522
+    name: "Tawa Paneer Masala"
+    words: [paneer, capsicum, onion, tomato]
+  - id: food-seed-0523
+    name: "Tawa Veg"
+    words: [okra, eggplant, potato, capsicum, onion]
+  - id: food-seed-0524
+    name: "Tinda Masala"
+    words: [tinda, onion, tomato]
+  - id: food-seed-0528
+    name: "Tomato Rasam"
+    words: [tomato, tamarind, toor dal]
+  - id: food-seed-0532
+    name: "Toor Dal / Yellow Dal Tadka"
+    words: [toor dal, tomato, onion]
+  - id: food-seed-0537
+    name: "Torai Ki Sabji (Ridge Gourd)"
+    words: [ridge gourd, tomato, onion]
+  - id: food-seed-0540
+    name: "Undhiyu (Gujarati Mixed Veg)"
+    words: [eggplant, potato, sweet potato, yam, french beans, fenugreek]
+  - id: food-seed-0547
+    name: "Vada Pav (1 piece)"
+    words: [pav, potato, besan]
+  - id: food-seed-0550
+    name: "Veg Hakka Noodles"
+    words: [noodles, cabbage, carrot, capsicum, onion, soy sauce]
+  - id: food-seed-0553
+    name: "Veg Kolhapuri"
+    words: [carrot, peas, cauliflower, french beans, coconut, onion]
+  - id: food-seed-0556
+    name: "Veg Kurma"
+    words: [carrot, peas, potato, french beans, coconut]
+  - id: food-seed-0559
+    name: "Vegetable Pulao"
+    words: [rice, carrot, peas, french beans]
+  - id: food-seed-0571
+    name: "Zunka / Pitla (Besan)"
+    words: [besan, onion]

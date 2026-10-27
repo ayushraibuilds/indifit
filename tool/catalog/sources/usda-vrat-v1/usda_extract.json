@@ -1,0 +1,26 @@
+{
+ "168482": {
+  "desc": "Sweet potato, raw, unprepared",
+  "kcal": 86.0,
+  "protein_g": 1.57,
+  "fat_g": 0.05,
+  "carbs_g": 17.12,
+  "fibre_g": 3.0
+ },
+ "170682": {
+  "desc": "Amaranth grain, uncooked",
+  "kcal": 371.0,
+  "protein_g": 13.56,
+  "fat_g": 7.02,
+  "carbs_g": 58.55,
+  "fibre_g": 6.7
+ },
+ "170687": {
+  "desc": "Buckwheat flour, whole-groat",
+  "kcal": 335.0,
+  "protein_g": 12.62,
+  "fat_g": 3.1,
+  "carbs_g": 60.59,
+  "fibre_g": 10.0
+ }
+}

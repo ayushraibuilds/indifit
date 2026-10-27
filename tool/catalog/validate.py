@@ -15,6 +15,8 @@ Invariants (NUTRITION_CATALOGUE_PACKS_PLAN.md § 5):
                     grams) is within ±25 % of its base, unless tagged size/oil
   retired-name      names of retired foods never return as active foods
   size-budget       a full pack is under 1 MB gzipped
+  key-ingredients   a food's key_ingredients are 2-6 distinct lowercase words
+                    from key_ingredients.yaml, on a dish (not a variant)
   stale             the committed packs equal what build.py produces
 
 Usage:
@@ -240,6 +242,39 @@ def check_pack(pack, previous=None, retired_names=(), gram_rules=None, nutrient_
     return out
 
 
+def check_key_ingredients(pack, vocabulary):
+    """key_ingredients (pack 8 on): 2-6 distinct words from the vocabulary."""
+    out = []
+    names = {}
+    for word, others in vocabulary.items():
+        for name in [word, *others]:
+            if name != name.lower() or name in names:
+                out.append(Violation("key-ingredients", None, None, f"vocabulary name {name!r}"))
+            names[name] = word
+    for food in pack["foods"]:
+        words = food.get("key_ingredients")
+        if words is None:
+            continue
+        fid, name = food["id"], food["display_name"]
+
+        def bad(detail, fid=fid, name=name):
+            out.append(Violation("key-ingredients", fid, name, detail))
+
+        if not isinstance(words, list) or not 2 <= len(words) <= build.KEY_INGREDIENTS_MAX:
+            bad(f"{words!r}: needs 2-{build.KEY_INGREDIENTS_MAX} words")
+            continue
+        if len(set(words)) != len(words):
+            bad(f"{words!r} repeats a word")
+        if food.get("variant_of") is not None:
+            bad("a variant shares its dish's key ingredients")
+        for word in words:
+            if not isinstance(word, str) or word != word.lower():
+                bad(f"{word!r} is not lowercase")
+            elif word not in vocabulary:
+                bad(f"{word!r} is not in key_ingredients.yaml")
+    return out
+
+
 def check_delta(previous, delta, full):
     """Applying [delta] to [previous] must give [full]."""
     out = []
@@ -326,6 +361,9 @@ def validate_built():
         nutrient_ids=_nutrient_ids(),
     )
     out += check_legacy_servings(latest, build.load_source_rows())
+    if build.LATEST >= build.KEY_INGREDIENTS_VERSION:
+        vocabulary = build.load_yaml(build.KEY_INGREDIENTS)["vocabulary"]
+        out += check_key_ingredients(latest, vocabulary)
     if previous is not None:
         delta = build.decode(outputs[build.PACKS / f"v{build.LATEST}/{build.LATEST}-from-{build.LATEST - 1}.json.gz"])
         out += check_delta(previous, delta, latest)

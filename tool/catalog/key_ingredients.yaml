@@ -1,0 +1,182 @@
+# The allowed key-ingredient vocabulary (pack 8 on, TF-2 C).
+#
+# A dish's `key_ingredients` are 2-6 words from `vocabulary`, qualitative
+# only: no amounts. validate.py rejects any other word. build.py copies the
+# vocabulary and its synonyms to assets/catalog/key_ingredients.json, which
+# "Cook with what I have" normalises typed and spoken ingredients against.
+#
+# - vocabulary: canonical word -> other names (Hindi, Hinglish, English);
+#   every name maps to exactly one word.
+# - recipe_words: each ingredient key a USDA recipe source uses -> its word.
+#   Keys in `pantry` are never listed (oil, salt, spices, water).
+version: 8
+pantry: [oil, mustard_oil, sesame_oil, salt, water, spices, green_chilli]
+recipe_words:
+  almond: almonds
+  amaranth: rajgira
+  atta: atta
+  banana: banana
+  besan: besan
+  buckwheat_flour: kuttu atta
+  bulgur: dalia
+  butter: butter
+  cabbage: cabbage
+  capsicum: capsicum
+  carp: fish
+  carrot: carrot
+  cashew: cashew
+  chhena: paneer
+  chicken_breast: chicken
+  chicken_thigh: chicken
+  chickpeas: chickpeas
+  coconut: coconut
+  coriander: coriander
+  cornflakes: cornflakes
+  cornflour: cornflour
+  cucumber: cucumber
+  curd: curd
+  dinner_roll: pav
+  egg: egg
+  garlic: garlic
+  ghee: ghee
+  goat: mutton
+  hung_curd: curd
+  jaggery: jaggery
+  jowar: jowar
+  ketchup: ketchup
+  khoa: khoa
+  lemon_juice: lemon
+  maida: maida
+  makhana: makhana
+  mango: mango
+  mayonnaise: mayonnaise
+  milk: milk
+  moong: moong
+  mozzarella: cheese
+  oats: oats
+  onion: onion
+  orange: orange
+  paneer: paneer
+  peanut: peanuts
+  peas: peas
+  potato: potato
+  raisins: raisins
+  rajma: rajma
+  rice: rice
+  rice_flour: rice flour
+  sago: sabudana
+  semolina: suji
+  shrimp: prawns
+  soy_sauce: soy sauce
+  spinach: spinach
+  sugar: sugar
+  sweet_corn: corn
+  sweet_potato: sweet potato
+  tamarind: tamarind
+  tomato: tomato
+  toor: toor dal
+  urad: urad dal
+  white_bread: bread
+vocabulary:
+  almonds: [almond, badam]
+  apple: [seb, apples]
+  atta: [wheat flour, whole wheat flour, gehu atta, gehun ka atta, chapati flour]
+  bajra: [pearl millet]
+  banana: [kela, bananas]
+  beetroot: [chukandar, beet]
+  besan: [gram flour, chickpea flour]
+  bitter gourd: [karela]
+  black chickpeas: [kala chana, black chana]
+  bottle gourd: [lauki, dudhi, ghiya]
+  bread: [white bread, brown bread]
+  butter: [makhan, makkhan]
+  cabbage: [patta gobhi, patta gobi, band gobhi]
+  capsicum: [shimla mirch, bell pepper, green pepper]
+  carrot: [gajar, carrots]
+  cashew: [kaju, cashews]
+  cauliflower: [gobi, gobhi, phool gobhi, phool gobi]
+  chana dal: [split chickpeas, bengal gram]
+  cheese: [mozzarella, cheese slice]
+  chicken: [murgh, murg]
+  chickpeas: [chole, kabuli chana, safed chana, chickpea, garbanzo]
+  coconut: [nariyal, thengai, grated coconut]
+  coffee: [coffee powder]
+  colocasia: [arbi, arvi, taro]
+  coriander: [dhaniya, hara dhaniya, coriander leaves, cilantro]
+  corn: [makka, makai, sweet corn, bhutta]
+  cornflakes: [corn flakes]
+  cornflour: [corn starch, cornstarch, corn flour]
+  cream: [malai, fresh cream]
+  cucumber: [kheera, khira]
+  curd: [dahi, yogurt, yoghurt, curds]
+  dalia: [broken wheat, bulgur]
+  drumstick: [moringa, sahjan, drumsticks]
+  egg: [anda, ande, eggs]
+  eggplant: [baingan, baigan, brinjal, vangi, aubergine]
+  fenugreek: [methi, methi leaves]
+  fish: [machli, machhli, meen]
+  french beans: [beans, green beans, farasbi]
+  garlic: [lahsun, lasun, lehsun]
+  ghee: [desi ghee, clarified butter]
+  ivy gourd: [kundru, tindora, tondli]
+  jackfruit: [kathal]
+  jaggery: [gur, gud]
+  jowar: [sorghum]
+  ketchup: [tomato ketchup, tomato sauce]
+  khoa: [mawa, khoya]
+  kuttu atta: [kuttu, kuttu ka atta, buckwheat, buckwheat flour]
+  lemon: [nimbu, lime, lemon juice]
+  lobia: [black eyed peas, chawli]
+  maida: [refined flour, all purpose flour, plain flour]
+  makhana: [fox nuts, lotus seeds, phool makhana]
+  mango: [aam]
+  masoor dal: [masoor, red lentils, red lentil]
+  mayonnaise: [mayo]
+  milk: [doodh]
+  moong: [moong dal, mung, green gram, moong dal chilka]
+  mushroom: [mushrooms, khumb]
+  mustard greens: [sarson, sarson saag]
+  mutton: [goat, lamb, gosht]
+  noodles: [hakka noodles]
+  oats: [oatmeal]
+  okra: [bhindi, lady finger, ladyfinger, ladies finger]
+  onion: [pyaz, pyaaz, kanda, onions]
+  orange: [santra, oranges]
+  paneer: [cottage cheese]
+  papaya: [papita]
+  pav: [ladi pav, bun]
+  peanuts: [peanut, moongfali, mungfali, groundnut, groundnuts]
+  peas: [matar, mattar, green peas, hara matar]
+  poha: [flattened rice, chivda, aval]
+  pointed gourd: [parwal, parval]
+  pomegranate: [anar]
+  potato: [aloo, alu, batata, potatoes]
+  prawns: [jhinga, shrimp, prawn]
+  puffed rice: [murmura, kurmura, mamra, muri]
+  pumpkin: [kaddu, sitaphal]
+  quinoa: []
+  radish: [mooli]
+  ragi: [finger millet, nachni]
+  raisins: [kishmish]
+  rajgira: [amaranth, ramdana]
+  rajma: [kidney beans, red kidney beans]
+  raw banana: [kachha kela, plantain]
+  raw papaya: [kachha papita]
+  rice: [chawal, chaawal, basmati, basmati rice]
+  rice flour: [chawal ka atta]
+  ridge gourd: [torai, turai, tori]
+  sabudana: [sago, tapioca pearls]
+  sev: [bhujia]
+  soy sauce: [soya sauce]
+  soya chunks: [soya, nutrela, soy chunks]
+  spinach: [palak]
+  sugar: [chini, cheeni]
+  suji: [rava, rawa, semolina, sooji]
+  sweet potato: [shakarkandi, shakarkand]
+  tamarind: [imli]
+  tea: [chai patti, tea leaves]
+  tinda: [apple gourd, round gourd]
+  tomato: [tamatar, tomatoes]
+  toor dal: [arhar dal, tuvar dal, toor, arhar, tur dal]
+  urad dal: [urad, black gram]
+  yam: [suran, jimikand, elephant foot yam]
