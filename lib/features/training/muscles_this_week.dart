@@ -53,8 +53,10 @@ abstract final class MuscleSetRule {
   static const primarySets = 1.0;
   static const secondarySets = 0.5;
 
-  static const legend =
-      'Shaded by working sets this week · primary group 1, secondary ½';
+  /// The rule as printed, shared by every legend that uses it.
+  static const ruleText = 'primary group 1, secondary ½';
+
+  static const legend = 'Shaded by working sets this week · $ruleText';
 
   /// A logged working set with reps and no technique. Assisted, tempo,
   /// paused, drop and rest-pause sets are left out, as the bests engine

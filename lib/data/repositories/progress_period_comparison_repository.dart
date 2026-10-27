@@ -116,6 +116,74 @@ class ProgressPeriodComparisonRepository {
     );
   }
 
+  /// Summarises one civil-date range, [startLocalDate] to [endLocalDate]
+  /// inclusive, with the rules [comparePeriods] uses (TP-9 month and custom
+  /// comparison). Days after today are not read for nutrition.
+  Future<PeriodRangeSummary> summarizeRange({
+    required String startLocalDate,
+    required String endLocalDate,
+    required DateTime nowUtc,
+    required String timezoneId,
+  }) async {
+    final today = _dates.localDateFor(nowUtc, timezoneId);
+    final (startUtc, endExclusiveUtc) = _toUtcBounds(
+      startLocalDate,
+      endLocalDate,
+      timezoneId,
+    );
+    final daysCount = _civilDaysInclusive(startLocalDate, endLocalDate);
+    final containsToday =
+        _dates.compare(startLocalDate, today) <= 0 &&
+        _dates.compare(today, endLocalDate) <= 0;
+    final window = PeriodDateWindow(
+      startLocalDate: startLocalDate,
+      endLocalDate: endLocalDate,
+      startUtc: startUtc,
+      endExclusiveUtc: endExclusiveUtc,
+      daysCount: daysCount,
+      status: containsToday
+          ? PeriodCompletenessStatus.inProgress
+          : PeriodCompletenessStatus.complete,
+      inProgressDayIndex: containsToday
+          ? _civilDaysInclusive(startLocalDate, today)
+          : null,
+    );
+
+    final workouts = await _readBoundedWorkouts(
+      window: window,
+      timezoneId: timezoneId,
+      nowUtc: nowUtc,
+    );
+    NutritionPeriodSummary? nutrition;
+    if (_nutrition != null) {
+      try {
+        nutrition = await _readNutritionWindowSummary(
+          window: window,
+          today: today,
+          nowUtc: nowUtc,
+          timezoneId: timezoneId,
+        );
+      } catch (error) {
+        AppLogger.warning('Range nutrition summary failed: $error');
+      }
+    }
+    return PeriodRangeSummary(
+      window: window,
+      training: _summarizeTrainingWindow(window, workouts),
+      weight: await _readWeightWindowSummary(window),
+      nutrition: nutrition,
+    );
+  }
+
+  static int _civilDaysInclusive(String start, String end) {
+    DateTime parse(String value) {
+      final parts = value.split('-').map(int.parse).toList();
+      return DateTime.utc(parts[0], parts[1], parts[2]);
+    }
+
+    return parse(end).difference(parse(start)).inDays + 1;
+  }
+
   (PeriodDateWindow, PeriodDateWindow) _resolveWindows({
     required PeriodComparisonRange range,
     required String today,
