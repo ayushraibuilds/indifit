@@ -172,6 +172,8 @@ void main() {
     );
 
     Navigator.of(tester.element(find.byType(NutritionTargetsHubScreen))).pop();
+    // The first frame starts the pop transition; the second ends it.
+    await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
     final trainingRow = find.widgetWithText(ListTile, 'Training preferences');
     await _scrollSettingsTo(tester, trainingRow);

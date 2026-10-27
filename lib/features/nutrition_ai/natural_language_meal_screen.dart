@@ -5,15 +5,19 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/di/core_providers.dart';
 import '../../core/privacy/dpdp_consent_service.dart';
+import '../../core/privacy/privacy_policy.dart';
 import '../../core/theme/b05_semantic_colors.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../data/repositories/nutrition_food_catalog_repository.dart';
+import '../food_log/widgets/quick_add_macros_sheet.dart';
 import '../nutrition/nutrition_providers.dart';
+import '../voice/voice_mic_button.dart';
 import 'ai_items_thali_handoff.dart';
 import 'ai_result_report.dart';
 import 'meal_item_resolver.dart';
 import 'natural_language_meal_service.dart';
 import 'nutrition_ai_controllers.dart';
+import 'spoken_meal_parser.dart';
 
 class NaturalLanguageMealScreen extends ConsumerStatefulWidget {
   final String? mealType;
@@ -22,11 +26,16 @@ class NaturalLanguageMealScreen extends ConsumerStatefulWidget {
   /// Words to start from, such as a food search that found nothing (UR-33).
   final String? initialText;
 
+  /// Words said into food search's mic (TF-2 B): parsed on the phone and
+  /// shown on the review card, with no AI.
+  final String? spokenText;
+
   const NaturalLanguageMealScreen({
     super.key,
     this.mealType,
     this.date,
     this.initialText,
+    this.spokenText,
   });
 
   @override
@@ -49,7 +58,37 @@ class _NaturalLanguageMealScreenState
   @override
   void initState() {
     super.initState();
-    _textController = TextEditingController(text: widget.initialText ?? '');
+    _textController = TextEditingController(
+      text: widget.spokenText ?? widget.initialText ?? '',
+    );
+    final spoken = widget.spokenText?.trim();
+    if (spoken != null && spoken.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _parseSpoken(spoken));
+    }
+  }
+
+  /// Spoken words -> the local parser -> the review card (D3).
+  Future<void> _parseSpoken(String text) async {
+    final lookup = await ref.read(spokenFoodLookupProvider.future);
+    final parse = await SpokenMealParser.parse(text, lookup);
+    if (!mounted) return;
+    ref
+        .read(naturalLanguageMealControllerProvider.notifier)
+        .showSpokenMeal(parse);
+  }
+
+  Future<void> _quickAdd(int index, String words) async {
+    final added = await QuickAddMacrosSheet.show(
+      context,
+      initialMealType: _resolveMealType(),
+      targetDate: _resolveDate(),
+      initialDescription: words,
+    );
+    if (added != null && mounted) {
+      ref
+          .read(naturalLanguageMealControllerProvider.notifier)
+          .removeNotFound(index);
+    }
   }
 
   @override
@@ -96,9 +135,25 @@ class _NaturalLanguageMealScreenState
     final state = ref.watch(naturalLanguageMealControllerProvider);
     final controller = ref.read(naturalLanguageMealControllerProvider.notifier);
     final colors = context.b05Colors;
+    // Reached from food search's mic, AI may be off: then only the spoken
+    // words are parsed, on the phone.
+    final aiAllowed = ref.watch(privacyPolicyProvider).isAiAllowed;
+    final mic = VoiceMicButton.maybe(
+      ref,
+      onTranscript: (words) {
+        _textController.text = words;
+        _parseSpoken(words);
+      },
+    );
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Describe Meal')),
+      appBar: AppBar(
+        title: Text(
+          widget.spokenText != null && !aiAllowed
+              ? 'What you said'
+              : 'Describe Meal',
+        ),
+      ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(B05Layout.space16),
@@ -123,36 +178,51 @@ class _NaturalLanguageMealScreenState
                   TextField(
                     controller: _textController,
                     maxLines: 3,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       hintText:
                           'e.g. 2 rotis with 1 bowl dal tadka and 100g paneer',
-                      border: OutlineInputBorder(),
+                      border: const OutlineInputBorder(),
+                      suffixIcon: mic,
                     ),
                   ),
-                  const SizedBox(height: B05Layout.space12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 4,
-                    children: _starterChips.map((chip) {
-                      return ActionChip(
-                        label: Text(chip, style: const TextStyle(fontSize: 12)),
-                        onPressed: () {
-                          _textController.text = chip;
-                          _analyzeWithConsent(chip);
-                        },
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: B05Layout.space16),
-                  B05ActionButton(
-                    label: state.status == NaturalLanguageMealStatus.analyzing
-                        ? 'Analyzing...'
-                        : 'Analyze Meal',
-                    icon: Icons.auto_awesome_rounded,
-                    onPressed: state.isBusy
-                        ? null
-                        : () => _analyzeWithConsent(_textController.text),
-                  ),
+                  if (aiAllowed) ...[
+                    const SizedBox(height: B05Layout.space12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: _starterChips.map((chip) {
+                        return ActionChip(
+                          label: Text(
+                            chip,
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          onPressed: () {
+                            _textController.text = chip;
+                            _analyzeWithConsent(chip);
+                          },
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: B05Layout.space16),
+                    B05ActionButton(
+                      label: state.status == NaturalLanguageMealStatus.analyzing
+                          ? 'Analyzing...'
+                          : 'Analyze Meal',
+                      icon: Icons.auto_awesome_rounded,
+                      onPressed: state.isBusy
+                          ? null
+                          : () => _analyzeWithConsent(_textController.text),
+                    ),
+                  ] else ...[
+                    const SizedBox(height: B05Layout.space12),
+                    B05ActionButton(
+                      label: 'Find these foods',
+                      icon: Icons.search_rounded,
+                      onPressed: state.isBusy
+                          ? null
+                          : () => _parseSpoken(_textController.text),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -164,6 +234,29 @@ class _NaturalLanguageMealScreenState
                 label:
                     state.errorMessage ?? 'Could not analyze meal description.',
               ),
+            ],
+
+            if (state.isSpoken) ...[
+              const SizedBox(height: B05Layout.space16),
+              const B05StatusMessage(
+                status: B05SemanticStatus.info,
+                label:
+                    'Matched on this phone from what you said. Check each item.',
+              ),
+            ],
+
+            if (state.notFound.isNotEmpty) ...[
+              const SizedBox(height: B05Layout.space12),
+              for (final (index, words) in state.notFound.indexed)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.help_outline_rounded),
+                  title: Text('Not found: $words'),
+                  trailing: TextButton(
+                    onPressed: () => _quickAdd(index, words),
+                    child: const Text('Quick add'),
+                  ),
+                ),
             ],
 
             if (state.result?.isFallback == true) ...[
