@@ -1,3 +1,4 @@
 # Play Data Safety notes
 
 - AI processing (N14-09): Describe a meal, Meal photo and Nutrition label send the typed text or the photo to Google's Gemini through Firebase AI Logic, only after the user opts in to connected AI; declare it as "Photos" and "Other user-generated content", processed by a third party, not shared for advertising, not stored by IndiFit, and reportable in-app via "Report a problem with this result".
+- Voice input (TF-2 B, UF-7): the RECORD_AUDIO permission is used only while the user holds the mic in food search or Describe a meal, with Android's on-device speech recognizer (API 31+; the app checks for it and hides the mic otherwise). Audio is processed on the device and is never stored or sent, so it is not "collected": do not declare "Audio > Voice or sound recordings". The recognised words stay on the phone unless the user then taps "Analyze Meal", which sends them as the typed text above.

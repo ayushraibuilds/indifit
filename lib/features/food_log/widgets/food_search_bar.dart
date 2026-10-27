@@ -12,6 +12,10 @@ class FoodSearchBar extends StatelessWidget {
   final String labelText;
   final String hintText;
 
+  /// Shown while the field is empty: the mic (TF-2 B), when voice input
+  /// is available on this phone.
+  final Widget? voiceAction;
+
   const FoodSearchBar({
     super.key,
     required this.controller,
@@ -21,6 +25,7 @@ class FoodSearchBar extends StatelessWidget {
     this.onTapOutside,
     this.labelText = 'Search foods',
     this.hintText = 'Roti, paneer bhurji, dal, idli…',
+    this.voiceAction,
   });
 
   @override
@@ -44,7 +49,7 @@ class FoodSearchBar extends StatelessWidget {
                     icon: const Icon(Icons.clear_rounded),
                     onPressed: onClear ?? () => controller.clear(),
                   )
-                : null,
+                : voiceAction,
           ),
         );
       },

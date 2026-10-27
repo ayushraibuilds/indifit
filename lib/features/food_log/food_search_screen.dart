@@ -34,6 +34,7 @@ import '../../data/services/food_query_amount.dart';
 import '../../data/services/food_search_pipeline.dart';
 import '../../data/services/nutrition_food_search_ranking.dart';
 import '../dashboard/today_surface_controller.dart';
+import '../voice/voice_mic_button.dart';
 import 'barcode_scanner_screen.dart';
 import 'canonical_food_actions.dart';
 import 'canonical_food_delete.dart';
@@ -1724,6 +1725,12 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
                   autofocus: _activeMealType != null,
                   onClear: () => _searchController.clear(),
                   onTapOutside: (_) => FocusScope.of(context).unfocus(),
+                  voiceAction: VoiceMicButton.maybe(
+                    ref,
+                    onTranscript: (words) => context.push(
+                      _aiToolLocation('/food/spoken', text: words),
+                    ),
+                  ),
                 ),
                 if (_searchController.text.isEmpty) ...[
                   const SizedBox(height: 10),
