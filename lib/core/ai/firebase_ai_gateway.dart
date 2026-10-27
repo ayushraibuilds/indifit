@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../firebase_options.dart';
 import '../config/app_config.dart';
+import '../plus/plus_gate.dart';
 import '../utils/app_logger.dart';
 import 'ai_daily_caps.dart';
 import 'ai_gateway.dart';
@@ -208,6 +209,7 @@ class FirebaseAiGateway implements AiGateway {
         AiRemoteConfigKeys.model: GeminiRequests.defaultModel,
         AiRemoteConfigKeys.photoEnabled: true,
         AiRemoteConfigKeys.dailyCaps: AiDailyCaps.defaultsJson,
+        PlusRemoteConfigKeys.enabled: false,
       });
       await config.setConfigSettings(
         RemoteConfigSettings(
