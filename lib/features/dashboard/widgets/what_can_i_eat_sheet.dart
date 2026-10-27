@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/plus/plus_gate.dart';
 import '../../../core/presentation/consumer_number_label.dart';
 import '../../../core/utils/app_logger.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
@@ -15,6 +16,7 @@ import '../protein_nudge.dart';
 import '../today_surface_controller.dart';
 import '../weigh_in_reminder.dart';
 import '../what_can_i_eat.dart';
+import 'cook_with_what_i_have_screen.dart';
 
 /// Opens "What can I eat?" (TF-2 A) for [plan]. "+ Add" logs to [day] in
 /// the meal for the time now, closes the sheet and shows the usual
@@ -149,6 +151,25 @@ class _WhatCanIEatSheetState extends ConsumerState<WhatCanIEatSheet> {
               suggestion: suggestion,
               onAdd: _busy ? null : () => unawaited(_add(suggestion)),
             ),
+          // TF-2 C is Plus: hidden entirely while the flag is off (D1).
+          PlusGate(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                key: const Key('what_can_i_eat_cook'),
+                onPressed: () {
+                  final host = Navigator.of(widget.hostContext);
+                  Navigator.of(context).pop();
+                  host.push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => CookWithWhatIHaveScreen(day: widget.day),
+                    ),
+                  );
+                },
+                child: const Text('Cook with what I have'),
+              ),
+            ),
+          ),
           if (moreIdeas != null) ...[
             const SizedBox(height: B05Layout.space8),
             TextButton(
