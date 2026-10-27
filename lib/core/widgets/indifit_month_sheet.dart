@@ -228,22 +228,19 @@ class _IndiFitMonthSheetState extends State<IndiFitMonthSheet> {
             ),
           ),
           const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          // Wraps on narrow phones once the vrat key joins the row.
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 16,
+            runSpacing: 4,
             children: [
-              _Dot(color: colors.success.indicator),
-              const SizedBox(width: 4),
-              Text('Food logged', style: B05Typography.caption(context)),
-              const SizedBox(width: 16),
-              _Dot(color: colors.info.indicator),
-              const SizedBox(width: 4),
-              Text('Workout saved', style: B05Typography.caption(context)),
-              if (widget.onLongPressDay != null) ...[
-                const SizedBox(width: 16),
-                _Dot(color: colors.action),
-                const SizedBox(width: 4),
-                Text('Vrat day', style: B05Typography.caption(context)),
-              ],
+              _LegendItem(
+                color: colors.success.indicator,
+                label: 'Food logged',
+              ),
+              _LegendItem(color: colors.info.indicator, label: 'Workout saved'),
+              if (widget.onLongPressDay != null)
+                _LegendItem(color: colors.action, label: 'Vrat day'),
             ],
           ),
           if (widget.onLongPressDay != null) ...[
@@ -470,6 +467,23 @@ class _DayCell extends StatelessWidget {
       ),
     );
   }
+}
+
+class _LegendItem extends StatelessWidget {
+  const _LegendItem({required this.color, required this.label});
+
+  final Color color;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      _Dot(color: color),
+      const SizedBox(width: 4),
+      Text(label, style: B05Typography.caption(context)),
+    ],
+  );
 }
 
 class _Dot extends StatelessWidget {
