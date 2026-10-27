@@ -86,6 +86,8 @@ class TodayHeader extends StatefulWidget {
     this.onDateChanged,
     this.onOpenAppearance,
     this.contentReady,
+    this.onOpenMore,
+    this.dayChip,
   });
 
   final String userName;
@@ -102,6 +104,12 @@ class TodayHeader extends StatefulWidget {
   /// Whether Today's first content has loaded. Set, the streak flame pops in
   /// once, after the ring's sweep (T3); null shows it as is.
   final bool? contentReady;
+
+  /// The "…" button (vrat / festival day, UF-9); hidden when null.
+  final VoidCallback? onOpenMore;
+
+  /// A chip under the date line, e.g. "Vrat day".
+  final Widget? dayChip;
 
   @override
   State<TodayHeader> createState() => TodayHeaderState();
@@ -172,6 +180,10 @@ class TodayHeaderState extends State<TodayHeader> with WidgetsBindingObserver {
                   today: _localNow,
                   onDateChanged: widget.onDateChanged,
                 ),
+                if (widget.dayChip != null) ...[
+                  const SizedBox(height: B05Layout.space4),
+                  widget.dayChip!,
+                ],
               ],
             ),
           ),
@@ -196,6 +208,14 @@ class TodayHeaderState extends State<TodayHeader> with WidgetsBindingObserver {
             onPressed: widget.onOpenSettings,
             focusOrder: 2,
           ),
+          if (widget.onOpenMore != null)
+            TodayHeaderIconButton(
+              icon: Icons.more_horiz_rounded,
+              label: 'More',
+              hint: 'Mark a vrat or festival day.',
+              onPressed: widget.onOpenMore!,
+              focusOrder: 3,
+            ),
         ],
       ),
     );

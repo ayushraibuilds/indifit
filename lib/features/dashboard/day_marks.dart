@@ -6,6 +6,8 @@ import '../../core/utils/app_logger.dart';
 import '../../core/widgets/indifit_month_sheet.dart';
 import '../../data/repositories/workout_repository.dart';
 import '../nutrition/nutrition_providers.dart';
+import '../vrat/vrat_day_sheet.dart';
+import '../vrat/vrat_days.dart';
 
 /// The month sheet's dots (U-9): days with food logged and workouts saved,
 /// read from the diary and the workout history. A read that fails leaves
@@ -16,6 +18,7 @@ IndiFitMonthMarksLoader diaryMonthMarks(ProviderContainer container) {
   );
   final workouts = container.read(workoutRepositoryProvider);
   return (monthStart) async {
+    final vrat = container.read(vratDaysProvider);
     final monthEnd = DateTime(monthStart.year, monthStart.month + 1, 0);
     var foodDays = <DateTime>{};
     var workoutDays = <DateTime>{};
@@ -40,7 +43,15 @@ IndiFitMonthMarksLoader diaryMonthMarks(ProviderContainer container) {
     } on Object catch (error) {
       AppLogger.warning('Month workout dots skipped: $error', 'MonthSheet');
     }
-    return IndiFitMonthMarks(foodDays: foodDays, workoutDays: workoutDays);
+    final monthPrefix = _isoDate(monthStart).substring(0, 8);
+    return IndiFitMonthMarks(
+      foodDays: foodDays,
+      workoutDays: workoutDays,
+      vratDays: {
+        for (final date in vrat)
+          if (date.startsWith(monthPrefix)) DateTime.parse(date),
+      },
+    );
   };
 }
 
@@ -68,6 +79,10 @@ Future<DateTime?> pickDiaryDay(
     today: today,
     marks: marks,
     title: title,
+    // Without a ProviderScope there is nowhere to keep vrat days.
+    onLongPressDay: marks == null
+        ? null
+        : (sheetContext, day) => showVratDaySheet(sheetContext, day: day),
   );
 }
 

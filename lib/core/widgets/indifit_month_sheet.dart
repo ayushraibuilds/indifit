@@ -12,6 +12,7 @@ class IndiFitMonthMarks {
   const IndiFitMonthMarks({
     this.foodDays = const {},
     this.workoutDays = const {},
+    this.vratDays = const {},
   });
 
   static const none = IndiFitMonthMarks();
@@ -21,6 +22,9 @@ class IndiFitMonthMarks {
 
   /// Civil days with at least one saved workout.
   final Set<DateTime> workoutDays;
+
+  /// Civil days marked as vrat / festival days (UF-9).
+  final Set<DateTime> vratDays;
 }
 
 /// Loads [IndiFitMonthMarks] for the month starting at [monthStart]. The
@@ -40,6 +44,7 @@ Future<DateTime?> showIndiFitMonthSheet(
   DateTime? today,
   IndiFitMonthMarksLoader? marks,
   String title = 'Pick a day',
+  Future<void> Function(BuildContext context, DateTime day)? onLongPressDay,
 }) => showIndiFitBottomSheet<DateTime>(
   context: context,
   semanticLabel: title,
@@ -50,6 +55,7 @@ Future<DateTime?> showIndiFitMonthSheet(
     today: today,
     marks: marks,
     title: title,
+    onLongPressDay: onLongPressDay,
   ),
 );
 
@@ -65,6 +71,7 @@ class IndiFitMonthSheet extends StatefulWidget {
     this.today,
     this.marks,
     this.title = 'Pick a day',
+    this.onLongPressDay,
   });
 
   final DateTime initialDay;
@@ -79,6 +86,11 @@ class IndiFitMonthSheet extends StatefulWidget {
   final DateTime? today;
   final IndiFitMonthMarksLoader? marks;
   final String title;
+
+  /// Opens a day's own sheet (vrat / festival day); the month's marks are
+  /// read again after it closes. Null: long-press does nothing.
+  final Future<void> Function(BuildContext context, DateTime day)?
+  onLongPressDay;
 
   @override
   State<IndiFitMonthSheet> createState() => _IndiFitMonthSheetState();
@@ -204,6 +216,13 @@ class _IndiFitMonthSheetState extends State<IndiFitMonthSheet> {
                   selected: selected,
                   marks: snapshot.data ?? IndiFitMonthMarks.none,
                   onPick: (day) => Navigator.of(context).pop(day),
+                  onLongPress: widget.onLongPressDay == null
+                      ? null
+                      : (day) async {
+                          await widget.onLongPressDay!(context, day);
+                          if (!mounted) return;
+                          setState(() => _marks.remove(index));
+                        },
                 ),
               ),
             ),
@@ -219,8 +238,22 @@ class _IndiFitMonthSheetState extends State<IndiFitMonthSheet> {
               _Dot(color: colors.info.indicator),
               const SizedBox(width: 4),
               Text('Workout saved', style: B05Typography.caption(context)),
+              if (widget.onLongPressDay != null) ...[
+                const SizedBox(width: 16),
+                _Dot(color: colors.action),
+                const SizedBox(width: 4),
+                Text('Vrat day', style: B05Typography.caption(context)),
+              ],
             ],
           ),
+          if (widget.onLongPressDay != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Long-press a day to mark a vrat or festival day.',
+              textAlign: TextAlign.center,
+              style: B05Typography.caption(context),
+            ),
+          ],
         ],
       ),
     );
@@ -274,6 +307,7 @@ class _MonthGrid extends StatelessWidget {
     required this.selected,
     required this.marks,
     required this.onPick,
+    this.onLongPress,
   });
 
   final DateTime month;
@@ -284,6 +318,7 @@ class _MonthGrid extends StatelessWidget {
   final DateTime selected;
   final IndiFitMonthMarks marks;
   final ValueChanged<DateTime> onPick;
+  final ValueChanged<DateTime>? onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -317,8 +352,10 @@ class _MonthGrid extends StatelessWidget {
       isSelected: day == selected,
       food: marks.foodDays.contains(day),
       workout: marks.workoutDays.contains(day),
+      vrat: marks.vratDays.contains(day),
       today: today,
       onPick: onPick,
+      onLongPress: onLongPress,
     );
   }
 }
@@ -333,6 +370,8 @@ class _DayCell extends StatelessWidget {
     required this.workout,
     required this.today,
     required this.onPick,
+    this.vrat = false,
+    this.onLongPress,
   });
 
   final DateTime day;
@@ -341,8 +380,10 @@ class _DayCell extends StatelessWidget {
   final bool isSelected;
   final bool food;
   final bool workout;
+  final bool vrat;
   final DateTime today;
   final ValueChanged<DateTime> onPick;
+  final ValueChanged<DateTime>? onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -353,6 +394,7 @@ class _DayCell extends StatelessWidget {
       if (isToday) 'today',
       if (food) 'food logged',
       if (workout) 'workout saved',
+      if (vrat) 'vrat day',
       if (!enabled) 'not available',
     ].join(', ');
     final textColor = !enabled
@@ -369,6 +411,9 @@ class _DayCell extends StatelessWidget {
       child: InkResponse(
         key: ValueKey('indifit_month_day_$iso'),
         onTap: enabled ? () => onPick(day) : null,
+        onLongPress: enabled && onLongPress != null
+            ? () => onLongPress!(day)
+            : null,
         radius: 22,
         child: SizedBox(
           height: 48,
@@ -409,6 +454,12 @@ class _DayCell extends StatelessWidget {
                       _Dot(
                         key: ValueKey('indifit_month_workout_$iso'),
                         color: colors.info.indicator,
+                      ),
+                    if ((food || workout) && vrat) const SizedBox(width: 3),
+                    if (vrat)
+                      _Dot(
+                        key: ValueKey('indifit_month_vrat_$iso'),
+                        color: colors.action,
                       ),
                   ],
                 ),

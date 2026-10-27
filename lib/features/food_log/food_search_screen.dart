@@ -34,6 +34,7 @@ import '../../data/services/food_query_amount.dart';
 import '../../data/services/food_search_pipeline.dart';
 import '../../data/services/nutrition_food_search_ranking.dart';
 import '../dashboard/today_surface_controller.dart';
+import '../vrat/vrat_days.dart';
 import 'barcode_scanner_screen.dart';
 import 'canonical_food_actions.dart';
 import 'canonical_food_delete.dart';
@@ -1753,7 +1754,11 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     } catch (_) {
       // Safe: suggestions only; without a profile they default to veg.
     }
-    return foodStapleSuggestions(mealType: _activeMealType, diet: diet);
+    return foodStapleSuggestions(
+      mealType: _activeMealType,
+      diet: diet,
+      vratDay: watchIsVratDay(ref, widget.selectedDate ?? DateTime.now()),
+    );
   }
 
   /// Logs one tap from a starter chip (My chai, My roti) into the meal,

@@ -2,7 +2,13 @@
 ///
 /// Breakfast and snacks have their own staples; lunch and dinner keep the
 /// everyday plate. Eggs and chicken only appear for diets that eat them.
-List<String> foodStapleSuggestions({String? mealType, String? diet}) {
+/// On a marked vrat day (UF-9) every meal gets vrat foods, each one in the
+/// catalogue.
+List<String> foodStapleSuggestions({
+  String? mealType,
+  String? diet,
+  bool vratDay = false,
+}) {
   final normalizedDiet = (diet ?? 'veg').toLowerCase();
   final eatsMeat = const {
     'non-veg',
@@ -11,6 +17,9 @@ List<String> foodStapleSuggestions({String? mealType, String? diet}) {
   }.contains(normalizedDiet);
   final eatsEggs = eatsMeat || normalizedDiet == 'eggetarian';
   final vegan = normalizedDiet == 'vegan';
+  if (vratDay) {
+    return ['Sabudana', 'Makhana', 'Fruit', if (!vegan) 'Curd', 'Peanuts'];
+  }
   switch (mealType) {
     case 'breakfast':
       return [

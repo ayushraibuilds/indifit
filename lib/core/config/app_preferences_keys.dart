@@ -137,6 +137,9 @@ abstract final class AppPreferenceKeys {
   // and the day "Not today" was tapped.
   static const prefWeighInDays = 'pref_weigh_in_days';
   static const prefWeighInDismissedDate = 'pref_weigh_in_dismissed_date';
+  // Vrat / festival days (UF-9): civil dates the user marked. Excused from
+  // the streak; targets unchanged. Backed up.
+  static const prefVratDays = 'pref_vrat_days';
   // Protein nudge (UF-5): the day "Not today" was tapped.
   static const prefProteinNudgeDismissedDate =
       'pref_protein_nudge_dismissed_date';

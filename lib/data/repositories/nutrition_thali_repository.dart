@@ -195,6 +195,20 @@ class NutritionThaliRepository {
     return _foodOption(row, await _catalogueQuantities.measureFor(row.id));
   }
 
+  /// The active food with catalogue id [id], or null when it is missing or
+  /// retired.
+  Future<NutritionThaliFoodOption?> findFoodById(String id) async {
+    final row =
+        await (_db.select(_db.nutritionFoods)
+              ..where(
+                (food) => food.id.equals(id) & food.lifecycle.equals('active'),
+              )
+              ..limit(1))
+            .getSingleOrNull();
+    if (row == null) return null;
+    return _foodOption(row, await _catalogueQuantities.measureFor(row.id));
+  }
+
   /// [amount] of the food's own unit: 2 → "2 pieces" for roti, "2 katori"
   /// for dal, "2 g" for a food counted in grams.
   Future<Quantity?> ownUnitQuantity(String foodId, double amount) async {
