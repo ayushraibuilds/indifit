@@ -1,7 +1,7 @@
 # Privacy Policy for IndiFit
 
 **Effective Date:** August 29, 2026
-**Last Updated:** October 20, 2026
+**Last Updated:** October 27, 2026
 **App Version:** 1.0.0
 
 IndiFit ("we", "our", or "us") is an offline-first workout and nutrition application. This policy explains what the V1 application stores, which optional features can connect to other services, and the controls available to you.
@@ -14,6 +14,8 @@ IndiFit ("we", "our", or "us") is an offline-first workout and nutrition applica
 - **No IndiFit account or cloud sync:** V1 does not provide an IndiFit account, remote user database, or cloud-sync service.
 - **Automatic recovery copies:** IndiFit creates rolling JSON recovery copies in its application Documents area.
 - **No device backup or transfer:** Your logs, history, measurements and recovery copies are excluded from iCloud and Google backups and from phone-to-phone transfer. On iPhone, basic app settings (such as reminder times) may still be part of an iCloud backup; they hold none of your logs.
+
+- **Voice input:** If you tap the microphone in food search or Describe a meal, your phone's own speech recognition turns what you say into words on the device (on-device recognition only; Android 12 or later, or iPhone). The audio is never stored or sent, by IndiFit or to any server, and voice input works with Offline Mode on. The words are matched to foods on your phone, like typed text. Where your phone can't recognise English (India) on the device, the microphone is hidden and Settings → Voice input says why. If you then tap "Analyze Meal" in Describe a meal, the words (not the audio) are sent to the AI tools under section 3, as typed text would be.
 
 A new phone, reinstall or factory reset starts empty unless you export. To keep your data, export a backup file (Settings → Manage your data → Export now) and save it somewhere you control.
 

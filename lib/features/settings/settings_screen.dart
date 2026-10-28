@@ -9,6 +9,7 @@ import '../../core/di/user_profile_provider.dart';
 import '../../core/presentation/consumer_copy.dart';
 import '../../core/presentation/diet_preference_presentation.dart';
 import '../../core/theme/b05_semantic_colors.dart';
+import '../../core/voice/on_device_speech.dart';
 import '../../core/widgets/b05_accessibility_primitives.dart';
 import '../../core/widgets/consumer_task_primitives.dart';
 import '../../core/widgets/indi_fit_bottom_sheet.dart';
@@ -62,6 +63,7 @@ class SettingsScreen extends ConsumerWidget {
     final units = ref.watch(unitPreferenceProvider);
     final healthSummary = ref.watch(healthStateProvider).summary;
     final appVersion = ref.watch(appVersionLabelProvider).value;
+    final voice = ref.watch(voiceInputAvailabilityProvider).value;
     final playlistAvailable = ref
         .watch(b05PlaylistProviderRegistryProvider)
         .providers
@@ -135,6 +137,33 @@ class SettingsScreen extends ConsumerWidget {
                       title: 'Diary structure',
                       summary: 'Customize meal and snack slots',
                       onTap: () => _push(context, const DiaryStructureScreen()),
+                    ),
+                    // Why the mic shows or is hidden (TF-2 B, D2).
+                    _SettingsRow(
+                      icon: Icons.mic_none_rounded,
+                      title: 'Voice input',
+                      summary: voice?.summary ?? 'Checking this phone',
+                      onTap: () => showDialog<void>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Voice input'),
+                          content: Text(
+                            '${voice?.summary ?? 'Checking this phone'}.\n\n'
+                            'Say foods in food search or Describe a meal. '
+                            'Speech is recognised on this phone only: the '
+                            'audio is never stored or sent, and it works with '
+                            'Offline Mode on. Where the phone can\'t recognise '
+                            'English (India) on the device, the mic '
+                            'is hidden.',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              child: const Text('OK'),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ],
                 ),

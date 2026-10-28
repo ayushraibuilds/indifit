@@ -1,4 +1,5 @@
 import Flutter
+import Speech
 import UIKit
 
 @main
@@ -49,6 +50,29 @@ import UIKit
           )
         )
       }
+    }
+
+    // Voice logging (TF-2 B) listens only when this locale can be recognised
+    // on the device; speech_to_text then sets requiresOnDeviceRecognition.
+    let speechChannel = FlutterMethodChannel(
+      name: "com.indifit.indifit/speech_on_device",
+      binaryMessenger: engineBridge.applicationRegistrar.messenger()
+    )
+    speechChannel.setMethodCallHandler { call, result in
+      guard call.method == "onDeviceSupport" else {
+        result(FlutterMethodNotImplemented)
+        return
+      }
+      let tag = (call.arguments as? [String: Any])?["locale"] as? String ?? ""
+      guard let recognizer = SFSpeechRecognizer(locale: Locale(identifier: tag)) else {
+        result(["available": false, "reason": "language_not_supported"])
+        return
+      }
+      result(
+        recognizer.supportsOnDeviceRecognition
+          ? ["available": true]
+          : ["available": false, "reason": "no_on_device_recognizer"]
+      )
     }
 
     let liveActivityChannel = FlutterMethodChannel(

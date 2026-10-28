@@ -44,6 +44,16 @@ final nutritionRoutes = <RouteBase>[
       initialText: state.uri.queryParameters['text'],
     ),
   ),
+  // What was said in food search (TF-2 B), parsed on the phone: not an AI
+  // tool, so Offline Mode and AI off don't close it.
+  GoRoute(
+    path: '/food/spoken',
+    builder: (context, state) => NaturalLanguageMealScreen(
+      mealType: state.uri.queryParameters['mealType'],
+      date: state.uri.queryParameters['date'],
+      spokenText: state.uri.queryParameters['text'],
+    ),
+  ),
   GoRoute(
     path: '/food/photo',
     redirect: (context, state) => _nutritionAiRouteRedirect(context, state),

@@ -62,7 +62,10 @@ void main() {
       expect(plist, contains('photograph meals you choose to estimate'));
       expect(plist, contains('NSPhotoLibraryUsageDescription'));
       expect(plist, contains('photo of a nutrition label or a meal'));
-      expect(plist, isNot(contains('NSMicrophoneUsageDescription')));
+      // Voice input (TF-2 B): on-device only, and the strings say so.
+      expect(plist, contains('NSMicrophoneUsageDescription'));
+      expect(plist, contains('NSSpeechRecognitionUsageDescription'));
+      expect('audio is never stored or sent'.allMatches(plist), hasLength(2));
       expect(plist, isNot(contains('AI macro estimation')));
     });
 

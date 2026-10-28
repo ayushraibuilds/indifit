@@ -13,6 +13,7 @@ import '../../core/nutrition_household_measures.dart';
 import '../../core/privacy/nutrition_estimate_privacy.dart';
 import '../../core/privacy/privacy_policy.dart';
 import '../../data/models/b04_goal_models.dart';
+import '../../data/repositories/food_repository.dart';
 import '../../data/repositories/nutrition_constraint_repository.dart';
 import '../../data/repositories/nutrition_consumption_repository.dart';
 import '../../data/repositories/nutrition_estimate_repository.dart';
@@ -34,6 +35,7 @@ import '../food_log/thali/thali_preset_usage.dart';
 import '../nutrition_ai/natural_language_meal_service.dart';
 import '../nutrition_ai/nutrition_ai_controllers.dart';
 import '../nutrition_ai/nutrition_label_ocr_service.dart';
+import '../nutrition_ai/spoken_meal_parser.dart';
 import '../settings/nutrition_constraint_review_controller.dart';
 import '../settings/nutrition_constraints_controller.dart';
 import 'protein_distribution_controller.dart';
@@ -115,6 +117,14 @@ final nutritionFoodCatalogRepositoryProvider =
         registry: registry,
       );
     });
+
+/// Food search's top result for each spoken part (TF-2 B), on the phone.
+final spokenFoodLookupProvider = FutureProvider<SpokenFoodLookup>((ref) async {
+  return spokenFoodLookup(
+    ref.watch(foodRepositoryProvider),
+    await ref.watch(nutritionFoodCatalogRepositoryProvider.future),
+  );
+});
 
 final nutritionFoodLoggingCoordinatorProvider =
     FutureProvider<NutritionFoodLoggingCoordinator>((ref) async {

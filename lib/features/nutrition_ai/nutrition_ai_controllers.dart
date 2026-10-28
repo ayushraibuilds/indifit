@@ -9,6 +9,7 @@ import '../../data/repositories/nutrition_food_catalog_repository.dart';
 import '../../data/repositories/nutrition_food_logging_coordinator.dart';
 import 'natural_language_meal_service.dart';
 import 'nutrition_label_ocr_service.dart';
+import 'spoken_meal_parser.dart';
 
 // =============================================================================
 // NUTRITION LABEL OCR CONTROLLER
@@ -570,12 +571,20 @@ class NaturalLanguageMealState {
   final String? errorMessage;
   final bool isLogged;
 
+  /// Spoken parts no food matched (TF-2 B): "Not found: … · Quick add".
+  final List<String> notFound;
+
+  /// The items came from what was said, parsed on the phone, not the AI.
+  final bool isSpoken;
+
   const NaturalLanguageMealState({
     this.status = NaturalLanguageMealStatus.idle,
     this.result,
     this.editableItems = const [],
     this.errorMessage,
     this.isLogged = false,
+    this.notFound = const [],
+    this.isSpoken = false,
   });
 
   bool get isBusy =>
@@ -598,6 +607,8 @@ class NaturalLanguageMealState {
     String? errorMessage,
     bool clearError = false,
     bool? isLogged,
+    List<String>? notFound,
+    bool? isSpoken,
   }) {
     return NaturalLanguageMealState(
       status: status ?? this.status,
@@ -605,6 +616,8 @@ class NaturalLanguageMealState {
       editableItems: editableItems ?? this.editableItems,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       isLogged: isLogged ?? this.isLogged,
+      notFound: notFound ?? this.notFound,
+      isSpoken: isSpoken ?? this.isSpoken,
     );
   }
 }
@@ -651,6 +664,8 @@ class NaturalLanguageMealController
         status: NaturalLanguageMealStatus.ready,
         result: res,
         editableItems: List.from(res.items),
+        notFound: const [],
+        isSpoken: false,
       );
     } catch (e) {
       state = state.copyWith(
@@ -660,6 +675,31 @@ class NaturalLanguageMealController
             : 'Could not analyze meal description. Please check your connection or use food search.',
       );
     }
+  }
+
+  /// Shows what was said, parsed on the phone (D3): the same review card.
+  void showSpokenMeal(SpokenMealParse parse) {
+    _logSession = AiMealLogSession('voice-meal');
+    state = NaturalLanguageMealState(
+      status: NaturalLanguageMealStatus.ready,
+      result: MealDecompositionResult(
+        query: parse.transcript,
+        items: parse.items,
+        totalCalories: parse.items.fold(
+          0,
+          (sum, item) => sum + item.estimatedCalories,
+        ),
+      ),
+      editableItems: List.from(parse.items),
+      notFound: List.unmodifiable(parse.notFound),
+      isSpoken: true,
+    );
+  }
+
+  /// A not-found part was quick-added (or dismissed).
+  void removeNotFound(int index) {
+    if (index < 0 || index >= state.notFound.length) return;
+    state = state.copyWith(notFound: [...state.notFound]..removeAt(index));
   }
 
   void updateItemQuantity(int index, double newAmount, String newUnit) {

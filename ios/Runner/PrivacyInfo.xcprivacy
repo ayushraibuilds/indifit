@@ -39,6 +39,10 @@
       <key>NSPrivacyCollectedDataTypePurposes</key>
       <array><string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string></array>
     </dict>
+    <!-- Voice logging (TF-2 B) collects nothing: speech is recognised on the
+         device (requiresOnDeviceRecognition) and the audio is never stored
+         or sent, so NSPrivacyCollectedDataTypeAudioData is not declared.
+         Only the recognised words are used, on the phone, like typed text. -->
     <!-- Firebase App Check, Remote Config and Installations (used by the AI
          meal tools and their kill switch) send an installation identifier,
          usage data and diagnostics. Firebase's App Store data-collection
