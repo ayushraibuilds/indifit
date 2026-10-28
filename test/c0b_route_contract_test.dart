@@ -34,6 +34,7 @@ void main() {
     '/food/estimate-review',
     '/food/label-ocr',
     '/food/describe',
+    '/food/spoken',
     '/food/photo',
     '/food/recipes/edit',
     '/food/thali',
@@ -74,7 +75,7 @@ void main() {
     '/achievements',
   ];
 
-  test('root router exposes the canonical 50-path contract in order', () {
+  test('root router exposes the canonical 51-path contract in order', () {
     final container = ProviderContainer(
       overrides: [onboardingCompletedProvider.overrideWith((ref) => true)],
     );
