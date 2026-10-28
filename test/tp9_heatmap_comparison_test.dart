@@ -96,23 +96,97 @@ void main() {
   });
 
   group('month periods', () {
-    test('last month whole against this month so far', () {
-      final request = RangeComparisonRequest.months(
-        '2026-10-14',
-        timezoneId: 'Asia/Kolkata',
-        dates: dates,
-      );
-      expect(request.first, const CivilRange('2026-09-01', '2026-09-30'));
-      expect(request.second, const CivilRange('2026-10-01', '2026-10-14'));
+    RangeComparisonRequest months(String today) =>
+        RangeComparisonRequest.months(
+          today,
+          timezoneId: 'Asia/Kolkata',
+          dates: dates,
+        );
+
+    test('this month so far against the same days of last month', () {
+      final request = months('2026-10-28');
+      expect(request.first, const CivilRange('2026-09-01', '2026-09-28'));
+      expect(request.second, const CivilRange('2026-10-01', '2026-10-28'));
     });
 
-    test('January compares with the previous December', () {
-      final request = RangeComparisonRequest.months(
-        '2027-01-03',
-        timezoneId: 'Asia/Kolkata',
+    test('the 1st compares with the 1st', () {
+      final request = months('2026-10-01');
+      expect(request.first, const CivilRange('2026-09-01', '2026-09-01'));
+      expect(request.second, const CivilRange('2026-10-01', '2026-10-01'));
+    });
+
+    test('a shorter last month ends on its last day', () {
+      expect(
+        months('2026-03-31').first,
+        const CivilRange('2026-02-01', '2026-02-28'),
+      );
+      expect(
+        months('2028-03-30').first,
+        const CivilRange('2028-02-01', '2028-02-29'),
+      );
+      expect(
+        months('2026-10-31').first,
+        const CivilRange('2026-09-01', '2026-09-30'),
+      );
+    });
+
+    test('January compares with the same days of December', () {
+      expect(
+        months('2027-01-03').first,
+        const CivilRange('2026-12-01', '2026-12-03'),
+      );
+    });
+
+    testWidgets('both ranges are in the labels', (tester) async {
+      final db = AppDatabase.memory();
+      addTearDown(db.close);
+      final repository = ProgressPeriodComparisonRepository(
+        database: db,
         dates: dates,
       );
-      expect(request.first, const CivilRange('2026-12-01', '2026-12-31'));
+      final request = months('2026-10-28');
+      final now = DateTime.utc(2026, 10, 28, 6);
+      Future<PeriodRangeFacts> facts(CivilRange range) async =>
+          PeriodRangeFacts(
+            summary: await repository.summarizeRange(
+              startLocalDate: range.startLocalDate,
+              endLocalDate: range.endLocalDate,
+              nowUtc: now,
+              timezoneId: 'Asia/Kolkata',
+            ),
+            muscles: const MuscleSetCounts(
+              startLocalDate: '',
+              endLocalDate: '',
+              sets: {},
+              exercises: {},
+            ),
+          );
+      final comparison = await tester.runAsync(
+        () async => RangeComparison(
+          first: await facts(request.first),
+          second: await facts(request.second),
+        ),
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            activeRangeComparisonProvider.overrideWith(
+              (ref) async => comparison!,
+            ),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: const Scaffold(
+              body: SingleChildScrollView(
+                child: RangeComparisonCard(units: 'metric'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(find.text('1 Sep – 28 Sep'), findsOneWidget);
+      expect(find.text('1 Oct – 28 Oct (so far)'), findsOneWidget);
     });
   });
 

@@ -33,13 +33,15 @@ class CivilRange {
 class RangeComparisonRequest {
   const RangeComparisonRequest({required this.first, required this.second});
 
-  /// Last month, by default: shown on the left.
+  /// Last month's matching days, by default: shown on the left.
   final CivilRange first;
 
   /// This month so far, by default: shown on the right.
   final CivilRange second;
 
-  /// Last month, whole, against this month up to [today].
+  /// This month up to [today] against the same days of last month: 1–28 Oct
+  /// against 1–28 Sep. When last month is shorter it ends on its last day
+  /// (1–31 Mar against 1–28 Feb).
   static RangeComparisonRequest months(
     String today, {
     required String timezoneId,
@@ -47,8 +49,16 @@ class RangeComparisonRequest {
   }) {
     final thisMonthStart = '${today.substring(0, 8)}01';
     final lastMonthEnd = dates.addCalendarDays(thisMonthStart, timezoneId, -1);
+    final lastMonthStart = '${lastMonthEnd.substring(0, 8)}01';
+    // Same day number, or last month's last day when it has fewer days.
+    final dayOfMonth = int.parse(today.substring(8, 10));
+    final lastMonthDays = int.parse(lastMonthEnd.substring(8, 10));
+    final firstEnd = dayOfMonth >= lastMonthDays
+        ? lastMonthEnd
+        : '${lastMonthEnd.substring(0, 8)}'
+              '${dayOfMonth.toString().padLeft(2, '0')}';
     return RangeComparisonRequest(
-      first: CivilRange('${lastMonthEnd.substring(0, 8)}01', lastMonthEnd),
+      first: CivilRange(lastMonthStart, firstEnd),
       second: CivilRange(thisMonthStart, today),
     );
   }
