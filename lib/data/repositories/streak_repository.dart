@@ -9,8 +9,8 @@ import 'workout_repository.dart';
 
 /// The single source of the activity streak: days with food still in effect
 /// (legacy logs and canonical snapshots) or a completed workout, plus the
-/// user's streak-freeze allowance. Computed on demand, never cached, so every
-/// screen sees the same number.
+/// user's streak-freeze allowance; marked vrat days are excused. Computed on
+/// demand, never cached, so every screen sees the same number.
 class StreakRepository {
   StreakRepository({
     required Future<NutritionReadModelRepository> Function() nutrition,
@@ -55,8 +55,14 @@ class StreakRepository {
       activeDays.add(_civilDate(completedAt));
     }
 
+    final prefs = await _preferences();
     return StreakCalculator.calculateStreak(
       activeDays,
+      // Vrat / festival days (UF-9) neither break nor extend the streak.
+      excusedDays:
+          (prefs.getStringList(AppPreferenceKeys.prefVratDays) ??
+                  const <String>[])
+              .toSet(),
       streakFreezeCount: await freezeCount(),
       referenceLocalDate: _civilDate(_now()),
     );

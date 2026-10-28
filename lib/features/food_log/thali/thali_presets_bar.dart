@@ -7,11 +7,19 @@ import 'thali_presets.dart';
 class ThaliPresetsBar extends StatelessWidget {
   final ValueChanged<ThaliPresetDefinition> onSelectPreset;
 
-  const ThaliPresetsBar({super.key, required this.onSelectPreset});
+  /// A marked vrat day (UF-9) leads with the Vrat Thali.
+  final bool vratDay;
+
+  const ThaliPresetsBar({
+    super.key,
+    required this.onSelectPreset,
+    this.vratDay = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     final colors = context.b05Colors;
+    final presets = ThaliPresets.forDay(vratDay: vratDay);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -28,10 +36,10 @@ class ThaliPresetsBar extends StatelessWidget {
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: ThaliPresets.all.length,
+            itemCount: presets.length,
             separatorBuilder: (context, index) => const SizedBox(width: 8),
             itemBuilder: (context, index) {
-              final preset = ThaliPresets.all[index];
+              final preset = presets[index];
               return ActionChip(
                 key: Key('thali_preset_${preset.id}'),
                 avatar: Icon(

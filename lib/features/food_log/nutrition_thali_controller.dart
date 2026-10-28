@@ -720,12 +720,16 @@ class NutritionThaliController extends StateNotifier<NutritionThaliState> {
       final missingNames = <String>[];
 
       for (final def in items) {
-        final food = await repository.findFoodBySourceRef(def.foodSourceRef);
+        final food =
+            await repository.findFoodBySourceRef(def.foodSourceRef) ??
+            (def.foodId == null
+                ? null
+                : await repository.findFoodById(def.foodId!));
         final quantity = food == null
             ? null
             : await repository.ownUnitQuantity(food.id, def.amount);
         if (food == null || quantity == null) {
-          missingNames.add(def.displayName);
+          if (!def.optional) missingNames.add(def.displayName);
           continue;
         }
         addedItems.add(

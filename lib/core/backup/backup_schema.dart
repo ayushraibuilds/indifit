@@ -355,6 +355,7 @@ class BackupData {
         'pref_workout_reminder_days',
         'pref_diary_meal_slots',
         'pref_weigh_in_days',
+        'pref_vrat_days',
       ];
       for (final key in stringListKeys) {
         final listVal = prefs.getStringList(key);

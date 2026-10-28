@@ -210,7 +210,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    // Header order: appearance toggle, then settings, then the date line,
+    // Header order: appearance toggle, settings, More, then the date line,
     // then the week strip. Only check focus on the toggle so the test doesn't
     // flip the theme.
     await tester.sendKeyEvent(LogicalKeyboardKey.tab);
@@ -223,6 +223,15 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     expect(settingsCalls, 1);
+
+    // Then "More" (vrat / festival day, UF-9).
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    expect(
+      FocusManager.instance.primaryFocus?.context
+          ?.findAncestorWidgetOfExactType<TodayHeaderIconButton>()
+          ?.label,
+      'More',
+    );
 
     // Past the date line to "Back to today" (this fixture views yesterday).
     await tester.sendKeyEvent(LogicalKeyboardKey.tab);

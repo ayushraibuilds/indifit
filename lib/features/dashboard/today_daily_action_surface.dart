@@ -14,6 +14,9 @@ import '../../data/models/b02_progress_read_models.dart';
 import '../../data/models/hydration_models.dart';
 import '../../data/repositories/calendar_read_repository.dart';
 import '../food_log/diary_structure_controller.dart';
+import '../vrat/vrat_day_sheet.dart';
+import '../vrat/vrat_days.dart';
+import 'dashboard_controller.dart';
 import 'dashboard_module_registry.dart';
 import 'dashboard_personalization_controller.dart';
 import 'today_consumer_presentation.dart';
@@ -99,6 +102,14 @@ class TodayDailyActionSurface extends ConsumerWidget {
       dashboardPersonalizationControllerProvider.notifier,
     );
     final snapshotAsync = ref.watch(todaySurfaceSnapshotProvider(selectedDate));
+    // Vrat days (UF-9) change what the streak skips, wherever they're
+    // marked.
+    ref.listen(
+      vratDaysProvider,
+      (_, _) => unawaited(
+        ref.read(dashboardControllerProvider.notifier).computeStreak(),
+      ),
+    );
     final referenceNow = now ?? DateTime.now();
     final relation = todayDateRelation(selectedDate, referenceNow);
 
@@ -238,6 +249,16 @@ class TodayDailyActionSurface extends ConsumerWidget {
                           onOpenSettings: onOpenSettings,
                           onDateChanged: changeDay,
                           contentReady: !loading,
+                          onOpenMore: () =>
+                              showVratDaySheet(context, day: selectedDate),
+                          dayChip: watchIsVratDay(ref, selectedDate)
+                              ? VratDayChip(
+                                  onTap: () => showVratDaySheet(
+                                    context,
+                                    day: selectedDate,
+                                  ),
+                                )
+                              : null,
                           onOpenAppearance: () {
                             final isDark =
                                 Theme.of(context).brightness == Brightness.dark;

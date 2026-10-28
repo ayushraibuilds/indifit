@@ -11,10 +11,19 @@ class ThaliPresetItemDefinition {
   /// How many of the food's own units to add.
   final double amount;
 
+  /// The food's catalogue id, tried when [foodSourceRef] finds nothing.
+  final String? foodId;
+
+  /// Left out quietly when the food isn't in the catalogue yet (it ships in
+  /// a later pack), instead of being reported missing.
+  final bool optional;
+
   const ThaliPresetItemDefinition({
     required this.foodSourceRef,
     required this.displayName,
     required this.amount,
+    this.foodId,
+    this.optional = false,
   });
 }
 
@@ -136,6 +145,48 @@ abstract final class ThaliPresets {
       _salad,
     ],
   );
+
+  /// Shown first in the quick start on a marked vrat day (UF-9), and only
+  /// then. Catalogue foods only: sabudana khichdi, curd and a banana from
+  /// pack 7; kuttu roti and vrat aloo join once pack 8 is installed.
+  static const ThaliPresetDefinition vratThali = ThaliPresetDefinition(
+    id: 'vrat_thali',
+    name: 'Vrat Thali',
+    description: 'Sabudana Khichdi, Curd & Fruit',
+    items: [
+      ThaliPresetItemDefinition(
+        foodSourceRef: 'usda-staples-v1:sabudana khichdi',
+        foodId: 'food-usda-0078',
+        displayName: 'Sabudana Khichdi',
+        amount: 1,
+      ),
+      ThaliPresetItemDefinition(
+        foodSourceRef: 'usda-vrat-v1:kuttu roti',
+        foodId: 'food-usda-0309',
+        displayName: 'Kuttu Roti',
+        amount: 2,
+        optional: true,
+      ),
+      ThaliPresetItemDefinition(
+        foodSourceRef: 'usda-vrat-v1:vrat aloo (sendha namak)',
+        foodId: 'food-usda-0312',
+        displayName: 'Vrat Aloo',
+        amount: 1,
+        optional: true,
+      ),
+      _curd,
+      ThaliPresetItemDefinition(
+        foodSourceRef: 'usda-staples-v1:banana',
+        foodId: 'food-usda-0001',
+        displayName: 'Banana',
+        amount: 1,
+      ),
+    ],
+  );
+
+  /// The quick start's presets; on a vrat day the Vrat Thali leads.
+  static List<ThaliPresetDefinition> forDay({required bool vratDay}) =>
+      vratDay ? [vratThali, ...all] : all;
 
   static const List<ThaliPresetDefinition> all = [
     northIndianClassic,

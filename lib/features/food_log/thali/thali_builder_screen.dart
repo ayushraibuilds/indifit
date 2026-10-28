@@ -12,6 +12,7 @@ import '../../../core/theme/b05_semantic_colors.dart';
 import '../../../core/widgets/b05_accessibility_primitives.dart';
 import '../../../core/widgets/indi_fit_feedback.dart';
 import '../../dashboard/today_surface_controller.dart';
+import '../../vrat/vrat_days.dart';
 import '../canonical_food_actions.dart';
 import '../diary_structure_controller.dart';
 import '../katori_size_step.dart';
@@ -448,6 +449,10 @@ class _ThaliBuilderScreenState extends ConsumerState<ThaliBuilderScreen> {
                 ),
               ),
               presets: ThaliPresetsBar(
+                vratDay: watchIsVratDay(
+                  ref,
+                  widget.selectedDate ?? DateTime.now(),
+                ),
                 onSelectPreset: (preset) {
                   if (items.isEmpty) {
                     setState(() {
