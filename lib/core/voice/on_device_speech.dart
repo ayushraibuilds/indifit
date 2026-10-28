@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -56,27 +56,51 @@ abstract class VoiceEngine {
   Future<void> cancel();
 }
 
-/// speech_to_text 7.4.0 (the newest for Flutter 3.41) with `onDevice: true`:
-/// on iOS it sets requiresOnDeviceRecognition. On Android it falls back to
-/// the network recognizer when the on-device one is missing, so
-/// [onDeviceSupport] asks the platform first through a small channel
-/// (MainActivity.kt, AppDelegate.swift), and the app listens only when it
-/// says yes.
+/// The first Android API with SpeechRecognizer.createOnDeviceSpeechRecognizer.
+const int kAndroidOnDeviceSpeechMinSdk = 31;
+
+/// Whether this Android API level may listen at all: below 31 there is no
+/// on-device recognizer, only the network one, so the mic stays hidden.
+bool androidAllowsOnDeviceSpeech(int? sdkInt) =>
+    sdkInt != null && sdkInt >= kAndroidOnDeviceSpeechMinSdk;
+
+/// On-device speech, never the network recognizer (D2).
+///
+/// - Android: MainActivity.kt's channel. It only ever creates
+///   SpeechRecognizer.createOnDeviceSpeechRecognizer (API 31+) and fails
+///   rather than fall back. speech_to_text 7.4.0 is used only for the
+///   microphone permission prompt there: its own listen falls back to
+///   the network recognizer when the on-device one is missing.
+/// - iOS: speech_to_text 7.4.0 with `onDevice: true`, which sets
+///   requiresOnDeviceRecognition; AppDelegate.swift's channel answers
+///   whether the language is on the device.
 class PluginVoiceEngine implements VoiceEngine {
-  PluginVoiceEngine({SpeechToText? speech, MethodChannel? channel})
-    : _speech = speech ?? SpeechToText(),
-      _channel =
-          channel ??
-          const MethodChannel('com.indifit.indifit/speech_on_device');
+  PluginVoiceEngine({
+    SpeechToText? speech,
+    MethodChannel? channel,
+    EventChannel? androidResults,
+    TargetPlatform? platform,
+  }) : _speech = speech ?? SpeechToText(),
+       _channel = channel ?? const MethodChannel(_channelName),
+       _androidResults =
+           androidResults ?? const EventChannel('$_channelName/results'),
+       _platform = platform ?? (kIsWeb ? null : defaultTargetPlatform);
+
+  static const _channelName = 'com.indifit.indifit/speech_on_device';
 
   final SpeechToText _speech;
   final MethodChannel _channel;
+  final EventChannel _androidResults;
+  final TargetPlatform? _platform;
   bool _initialized = false;
   void Function(String error)? _onError;
+  StreamSubscription<Object?>? _androidListening;
+
+  bool get _android => _platform == TargetPlatform.android;
 
   @override
   Future<OnDeviceSpeechSupport> onDeviceSupport(VoiceLocale locale) async {
-    if (kIsWeb || !(Platform.isAndroid || Platform.isIOS)) {
+    if (!(_android || _platform == TargetPlatform.iOS)) {
       return const OnDeviceSpeechSupport.unavailable('unsupported_platform');
     }
     try {
@@ -84,6 +108,11 @@ class PluginVoiceEngine implements VoiceEngine {
         'onDeviceSupport',
         {'locale': locale.tag},
       );
+      // The API gate is checked here too, so the mic never shows below 31
+      // whatever the platform side answers.
+      if (_android && !androidAllowsOnDeviceSpeech(reply?['sdk'] as int?)) {
+        return const OnDeviceSpeechSupport.unavailable('os_too_old');
+      }
       if (reply?['available'] == true) {
         return const OnDeviceSpeechSupport.available();
       }
@@ -107,6 +136,7 @@ class PluginVoiceEngine implements VoiceEngine {
     if (_initialized) return true;
     _initialized = await _speech.initialize(
       onError: (SpeechRecognitionError error) => _onError?.call(error.errorMsg),
+      options: [SpeechToText.androidNoBluetooth],
     );
     return _initialized;
   }
@@ -119,6 +149,26 @@ class PluginVoiceEngine implements VoiceEngine {
   }) async {
     if (!await _initialize()) {
       onError('permission_denied');
+      return;
+    }
+    if (_android) {
+      await _androidListening?.cancel();
+      _androidListening = _androidResults.receiveBroadcastStream().listen((
+        event,
+      ) {
+        if (event is! Map) return;
+        final error = event['error'];
+        if (error is String) {
+          onError(error);
+        } else {
+          onWords(event['words'] as String? ?? '', event['final'] == true);
+        }
+      });
+      try {
+        await _channel.invokeMethod<void>('listen', {'locale': locale.tag});
+      } on PlatformException catch (error) {
+        onError(error.code);
+      }
       return;
     }
     _onError = onError;
@@ -136,10 +186,24 @@ class PluginVoiceEngine implements VoiceEngine {
   }
 
   @override
-  Future<void> stop() => _speech.stop();
+  Future<void> stop() async {
+    if (_android) {
+      await _channel.invokeMethod<void>('stop');
+      return;
+    }
+    await _speech.stop();
+  }
 
   @override
-  Future<void> cancel() => _speech.cancel();
+  Future<void> cancel() async {
+    if (_android) {
+      await _channel.invokeMethod<void>('cancel');
+      await _androidListening?.cancel();
+      _androidListening = null;
+      return;
+    }
+    await _speech.cancel();
+  }
 }
 
 /// Which languages voice logging can use on this phone; empty, with a
@@ -162,11 +226,16 @@ class VoiceInputAvailability {
     'no_on_device_recognizer' =>
       'This phone has no on-device speech recognition',
     'language_not_downloaded' =>
-      "Download English (India) or Hindi for on-device speech in your phone's settings",
+      "Download English (India) for on-device speech in your phone's settings",
     'unsupported_platform' => 'Voice input needs an Android phone or iPhone',
-    _ => "On-device speech isn't available for English (India) or Hindi here",
+    _ => "On-device speech isn't available for English (India) here",
   };
 }
+
+/// The languages the mic offers. Hindi is held back for now (its
+/// transcripts are Devanagari, which most dishes can't match yet); the
+/// parser keeps its Devanagari numbers for when it returns.
+const List<VoiceLocale> kVoiceLocales = [VoiceLocale.englishIndia];
 
 final voiceEngineProvider = Provider<VoiceEngine>((ref) => PluginVoiceEngine());
 
@@ -184,7 +253,7 @@ final voiceInputAvailabilityProvider = FutureProvider<VoiceInputAvailability>((
   final failed = ref.watch(voiceLocaleFailuresProvider);
   final locales = <VoiceLocale>[];
   String? reason;
-  for (final locale in VoiceLocale.values) {
+  for (final locale in kVoiceLocales) {
     if (failed.contains(locale)) {
       reason ??= 'language_not_supported';
       continue;

@@ -153,7 +153,7 @@ class SettingsScreen extends ConsumerWidget {
                             'Speech is recognised on this phone only: the '
                             'audio is never stored or sent, and it works with '
                             'Offline Mode on. Where the phone can\'t recognise '
-                            'English (India) or Hindi on the device, the mic '
+                            'English (India) on the device, the mic '
                             'is hidden.',
                           ),
                           actions: [

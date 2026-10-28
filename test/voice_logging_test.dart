@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indifit/core/di/core_providers.dart';
@@ -147,6 +148,80 @@ void main() {
     });
   });
 
+  group('Android API gate', () {
+    const channel = MethodChannel('com.indifit.indifit/speech_on_device');
+    final calls = <MethodCall>[];
+
+    PluginVoiceEngine android(Map<String, Object?> reply) {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (call) async {
+            calls.add(call);
+            return call.method == 'onDeviceSupport' ? reply : null;
+          });
+      addTearDown(
+        () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, null),
+      );
+      return PluginVoiceEngine(platform: TargetPlatform.android);
+    }
+
+    setUp(calls.clear);
+
+    test('API 31 is the first level allowed', () {
+      expect(kAndroidOnDeviceSpeechMinSdk, 31);
+      expect(androidAllowsOnDeviceSpeech(null), isFalse);
+      expect(androidAllowsOnDeviceSpeech(30), isFalse);
+      expect(androidAllowsOnDeviceSpeech(31), isTrue);
+      expect(androidAllowsOnDeviceSpeech(34), isTrue);
+    });
+
+    test(
+      'below API 31 the mic is hidden, whatever the platform says',
+      () async {
+        final engine = android({'available': true, 'sdk': 30});
+        final support = await engine.onDeviceSupport(VoiceLocale.englishIndia);
+        expect(support.available, isFalse);
+        expect(support.reason, 'os_too_old');
+
+        final container = ProviderContainer(
+          overrides: [voiceEngineProvider.overrideWithValue(engine)],
+        );
+        addTearDown(container.dispose);
+        final availability = await container.read(
+          voiceInputAvailabilityProvider.future,
+        );
+        expect(availability.isAvailable, isFalse);
+        expect(
+          availability.summary,
+          'Needs Android 12 or later for on-device speech',
+        );
+      },
+    );
+
+    test('a reply without its API level counts as too old', () async {
+      final support = await android({
+        'available': true,
+      }).onDeviceSupport(VoiceLocale.englishIndia);
+      expect(support.reason, 'os_too_old');
+    });
+
+    test('API 31 with the language on the device shows the mic', () async {
+      final engine = android({'available': true, 'sdk': 31});
+      final support = await engine.onDeviceSupport(VoiceLocale.englishIndia);
+      expect(support.available, isTrue);
+      expect(calls.single.arguments, {'locale': 'en-IN'});
+    });
+
+    test('API 33 without the language says to download it', () async {
+      final support = await android({
+        'available': false,
+        'reason': 'language_not_downloaded',
+        'sdk': 33,
+      }).onDeviceSupport(VoiceLocale.englishIndia);
+      expect(support.reason, 'language_not_downloaded');
+    });
+  });
+
   group('mic', () {
     Widget searchBar(FakeVoiceEngine engine, {List<String>? said}) {
       return ProviderScope(
@@ -175,9 +250,9 @@ void main() {
       expect(find.byIcon(Icons.mic_none_rounded), findsNothing);
     });
 
-    testWidgets('shows when one language is on the device', (tester) async {
+    testWidgets('shows when English (India) is on the device', (tester) async {
       await tester.pumpWidget(
-        searchBar(FakeVoiceEngine(supported: const {VoiceLocale.hindi})),
+        searchBar(FakeVoiceEngine(supported: const {VoiceLocale.englishIndia})),
       );
       await tester.pumpAndSettle();
       expect(find.byIcon(Icons.mic_none_rounded), findsOneWidget);
@@ -209,7 +284,8 @@ void main() {
       await on.read(privacyPolicyProvider.notifier).setOfflineOnly(true);
       expect(on.read(privacyPolicyProvider).isOfflineOnly, isTrue);
       final available = await on.read(voiceInputAvailabilityProvider.future);
-      expect(available.locales, VoiceLocale.values);
+      // Hindi is held back for now: English (India) only.
+      expect(available.locales, [VoiceLocale.englishIndia]);
     });
 
     testWidgets('explains before the system prompt, then listens', (
