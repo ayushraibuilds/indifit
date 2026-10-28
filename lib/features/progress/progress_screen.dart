@@ -22,6 +22,7 @@ import '../training/weekly_training_goal_providers.dart';
 import '../training/workout_history_screen.dart';
 import 'achievements_screen.dart';
 import 'period_comparison/widgets/period_comparison_section.dart';
+import 'plus/progress_plus_section.dart';
 import 'progress_dashboard_controller.dart';
 import 'progress_dashboard_models.dart';
 import 'weekly_check_in_screen.dart';
@@ -194,6 +195,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                     onOpenWeightHistory: () =>
                         _openWeightHistory(snapshot, units),
                   ),
+                  ProgressPlusSection(units: units),
                 ],
                 if ((snapshot.strengthSets?.isNotEmpty ?? false)) ...[
                   const SizedBox(height: B05Layout.space24),

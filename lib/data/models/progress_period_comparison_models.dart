@@ -307,3 +307,22 @@ class ProgressPeriodComparisonSnapshot {
       (nutritionComparison?.hasAnyLoggedDays ?? false) ||
       (weightComparison?.hasAnyObservations ?? false);
 }
+
+/// One arbitrary civil-date range, summarised by the same rules as the
+/// weekly comparison (TP-9 month and custom comparison, Plus).
+@immutable
+class PeriodRangeSummary {
+  const PeriodRangeSummary({
+    required this.window,
+    required this.training,
+    required this.weight,
+    this.nutrition,
+  });
+
+  final PeriodDateWindow window;
+  final TrainingPeriodSummary training;
+  final WeightPeriodSummary weight;
+
+  /// Null when nutrition could not be read.
+  final NutritionPeriodSummary? nutrition;
+}
