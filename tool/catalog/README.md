@@ -9,6 +9,7 @@ overlays/     curated corrections in YAML, applied in file order to every
               pack version at or above their `version`
 build.py      sources + overlays -> packs/ and assets/catalog/
 validate.py   the invariants; exits 1 on any violation (CI, static job)
+key_ingredients.yaml  the words a dish's `key_ingredients` may use (pack 8 on)
 packs/        build output, committed: deploy this directory as /catalog/v1/
 spotcheck_50.csv  50 random active foods to check against a reference
 tests/        python3 -m unittest discover -s tool/catalog/tests
@@ -26,6 +27,12 @@ Needs Python 3.10+ and PyYAML (`pip install pyyaml`).
    `lib/data/catalog/catalog_pack.dart`, and keep `kRetiredCatalogueFoods`,
    the identity manifest and `backend/routers/food.py` in line with the
    pack's `retire` list (tests check all three).
+
+From pack 8 a dish carries `key_ingredients`: 2-6 words from
+`key_ingredients.yaml`, no amounts, no pantry staples. A USDA recipe's are
+derived from its `usda_basis` (heaviest first); IndiFit's dishes have them
+authored in `overlays/0009_key_ingredients.yaml` (unreviewed). build.py also
+writes the vocabulary to `assets/catalog/key_ingredients.json` for the app.
 
 Pack 1 is frozen: `build.py` rebuilds it byte for byte, so its published
 sha256 never changes.

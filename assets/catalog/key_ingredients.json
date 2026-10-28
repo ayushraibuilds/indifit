@@ -1,0 +1,451 @@
+{
+ "version": 8,
+ "vocabulary": {
+  "almonds": [
+   "almond",
+   "badam"
+  ],
+  "apple": [
+   "apples",
+   "seb"
+  ],
+  "atta": [
+   "chapati flour",
+   "gehu atta",
+   "gehun ka atta",
+   "wheat flour",
+   "whole wheat flour"
+  ],
+  "bajra": [
+   "pearl millet"
+  ],
+  "banana": [
+   "bananas",
+   "kela"
+  ],
+  "beetroot": [
+   "beet",
+   "chukandar"
+  ],
+  "besan": [
+   "chickpea flour",
+   "gram flour"
+  ],
+  "bitter gourd": [
+   "karela"
+  ],
+  "black chickpeas": [
+   "black chana",
+   "kala chana"
+  ],
+  "bottle gourd": [
+   "dudhi",
+   "ghiya",
+   "lauki"
+  ],
+  "bread": [
+   "brown bread",
+   "white bread"
+  ],
+  "butter": [
+   "makhan",
+   "makkhan"
+  ],
+  "cabbage": [
+   "band gobhi",
+   "patta gobhi",
+   "patta gobi"
+  ],
+  "capsicum": [
+   "bell pepper",
+   "green pepper",
+   "shimla mirch"
+  ],
+  "carrot": [
+   "carrots",
+   "gajar"
+  ],
+  "cashew": [
+   "cashews",
+   "kaju"
+  ],
+  "cauliflower": [
+   "gobhi",
+   "gobi",
+   "phool gobhi",
+   "phool gobi"
+  ],
+  "chana dal": [
+   "bengal gram",
+   "split chickpeas"
+  ],
+  "cheese": [
+   "cheese slice",
+   "mozzarella"
+  ],
+  "chicken": [
+   "murg",
+   "murgh"
+  ],
+  "chickpeas": [
+   "chickpea",
+   "chole",
+   "garbanzo",
+   "kabuli chana",
+   "safed chana"
+  ],
+  "coconut": [
+   "grated coconut",
+   "nariyal",
+   "thengai"
+  ],
+  "coffee": [
+   "coffee powder"
+  ],
+  "colocasia": [
+   "arbi",
+   "arvi",
+   "taro"
+  ],
+  "coriander": [
+   "cilantro",
+   "coriander leaves",
+   "dhaniya",
+   "hara dhaniya"
+  ],
+  "corn": [
+   "bhutta",
+   "makai",
+   "makka",
+   "sweet corn"
+  ],
+  "cornflakes": [
+   "corn flakes"
+  ],
+  "cornflour": [
+   "corn flour",
+   "corn starch",
+   "cornstarch"
+  ],
+  "cream": [
+   "fresh cream",
+   "malai"
+  ],
+  "cucumber": [
+   "kheera",
+   "khira"
+  ],
+  "curd": [
+   "curds",
+   "dahi",
+   "yoghurt",
+   "yogurt"
+  ],
+  "dalia": [
+   "broken wheat",
+   "bulgur"
+  ],
+  "drumstick": [
+   "drumsticks",
+   "moringa",
+   "sahjan"
+  ],
+  "egg": [
+   "anda",
+   "ande",
+   "eggs"
+  ],
+  "eggplant": [
+   "aubergine",
+   "baigan",
+   "baingan",
+   "brinjal",
+   "vangi"
+  ],
+  "fenugreek": [
+   "methi",
+   "methi leaves"
+  ],
+  "fish": [
+   "machhli",
+   "machli",
+   "meen"
+  ],
+  "french beans": [
+   "beans",
+   "farasbi",
+   "green beans"
+  ],
+  "garlic": [
+   "lahsun",
+   "lasun",
+   "lehsun"
+  ],
+  "ghee": [
+   "clarified butter",
+   "desi ghee"
+  ],
+  "ivy gourd": [
+   "kundru",
+   "tindora",
+   "tondli"
+  ],
+  "jackfruit": [
+   "kathal"
+  ],
+  "jaggery": [
+   "gud",
+   "gur"
+  ],
+  "jowar": [
+   "sorghum"
+  ],
+  "ketchup": [
+   "tomato ketchup",
+   "tomato sauce"
+  ],
+  "khoa": [
+   "khoya",
+   "mawa"
+  ],
+  "kuttu atta": [
+   "buckwheat",
+   "buckwheat flour",
+   "kuttu",
+   "kuttu ka atta"
+  ],
+  "lemon": [
+   "lemon juice",
+   "lime",
+   "nimbu"
+  ],
+  "lobia": [
+   "black eyed peas",
+   "chawli"
+  ],
+  "maida": [
+   "all purpose flour",
+   "plain flour",
+   "refined flour"
+  ],
+  "makhana": [
+   "fox nuts",
+   "lotus seeds",
+   "phool makhana"
+  ],
+  "mango": [
+   "aam"
+  ],
+  "masoor dal": [
+   "masoor",
+   "red lentil",
+   "red lentils"
+  ],
+  "mayonnaise": [
+   "mayo"
+  ],
+  "milk": [
+   "doodh"
+  ],
+  "moong": [
+   "green gram",
+   "moong dal",
+   "moong dal chilka",
+   "mung"
+  ],
+  "mushroom": [
+   "khumb",
+   "mushrooms"
+  ],
+  "mustard greens": [
+   "sarson",
+   "sarson saag"
+  ],
+  "mutton": [
+   "goat",
+   "gosht",
+   "lamb"
+  ],
+  "noodles": [
+   "hakka noodles"
+  ],
+  "oats": [
+   "oatmeal"
+  ],
+  "okra": [
+   "bhindi",
+   "ladies finger",
+   "lady finger",
+   "ladyfinger"
+  ],
+  "onion": [
+   "kanda",
+   "onions",
+   "pyaaz",
+   "pyaz"
+  ],
+  "orange": [
+   "oranges",
+   "santra"
+  ],
+  "paneer": [
+   "cottage cheese"
+  ],
+  "papaya": [
+   "papita"
+  ],
+  "pav": [
+   "bun",
+   "ladi pav"
+  ],
+  "peanuts": [
+   "groundnut",
+   "groundnuts",
+   "moongfali",
+   "mungfali",
+   "peanut"
+  ],
+  "peas": [
+   "green peas",
+   "hara matar",
+   "matar",
+   "mattar"
+  ],
+  "poha": [
+   "aval",
+   "chivda",
+   "flattened rice"
+  ],
+  "pointed gourd": [
+   "parval",
+   "parwal"
+  ],
+  "pomegranate": [
+   "anar"
+  ],
+  "potato": [
+   "aloo",
+   "alu",
+   "batata",
+   "potatoes"
+  ],
+  "prawns": [
+   "jhinga",
+   "prawn",
+   "shrimp"
+  ],
+  "puffed rice": [
+   "kurmura",
+   "mamra",
+   "muri",
+   "murmura"
+  ],
+  "pumpkin": [
+   "kaddu",
+   "sitaphal"
+  ],
+  "quinoa": [],
+  "radish": [
+   "mooli"
+  ],
+  "ragi": [
+   "finger millet",
+   "nachni"
+  ],
+  "raisins": [
+   "kishmish"
+  ],
+  "rajgira": [
+   "amaranth",
+   "ramdana"
+  ],
+  "rajma": [
+   "kidney beans",
+   "red kidney beans"
+  ],
+  "raw banana": [
+   "kachha kela",
+   "plantain"
+  ],
+  "raw papaya": [
+   "kachha papita"
+  ],
+  "rice": [
+   "basmati",
+   "basmati rice",
+   "chaawal",
+   "chawal"
+  ],
+  "rice flour": [
+   "chawal ka atta"
+  ],
+  "ridge gourd": [
+   "torai",
+   "tori",
+   "turai"
+  ],
+  "sabudana": [
+   "sago",
+   "tapioca pearls"
+  ],
+  "sev": [
+   "bhujia"
+  ],
+  "soy sauce": [
+   "soya sauce"
+  ],
+  "soya chunks": [
+   "nutrela",
+   "soy chunks",
+   "soya"
+  ],
+  "spinach": [
+   "palak"
+  ],
+  "sugar": [
+   "cheeni",
+   "chini"
+  ],
+  "suji": [
+   "rava",
+   "rawa",
+   "semolina",
+   "sooji"
+  ],
+  "sweet potato": [
+   "shakarkand",
+   "shakarkandi"
+  ],
+  "tamarind": [
+   "imli"
+  ],
+  "tea": [
+   "chai patti",
+   "tea leaves"
+  ],
+  "tinda": [
+   "apple gourd",
+   "round gourd"
+  ],
+  "tomato": [
+   "tamatar",
+   "tomatoes"
+  ],
+  "toor dal": [
+   "arhar",
+   "arhar dal",
+   "toor",
+   "tur dal",
+   "tuvar dal"
+  ],
+  "urad dal": [
+   "black gram",
+   "urad"
+  ],
+  "yam": [
+   "elephant foot yam",
+   "jimikand",
+   "suran"
+  ]
+ }
+}

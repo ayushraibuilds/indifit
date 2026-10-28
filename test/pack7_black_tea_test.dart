@@ -31,7 +31,7 @@ void main() {
   );
 
   test('pack 7 is the bundled pack and imports black tea', () async {
-    expect(kBundledCatalogPackVersion, 7);
+    expect(kBundledCatalogPackVersion, greaterThanOrEqualTo(7));
     final option = await c.catalog.getOption(kMyChaiBlackTeaFoodId);
     expect(option, isNotNull);
     expect(option!.displayName, 'Black Tea (no milk, no sugar)');

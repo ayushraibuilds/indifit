@@ -16,7 +16,7 @@ const int kCatalogPackFormat = 1;
 /// The pack bundled with this app build. A device without a catalogue state
 /// at or above this version applies it on create, upgrade or next open.
 /// Pack 2 is built by tool/catalog/build.py (CAT-5, CAT-6).
-const int kBundledCatalogPackVersion = 7;
+const int kBundledCatalogPackVersion = 8;
 const String kBundledCatalogManifestAsset = 'assets/catalog/manifest.json';
 const String kBundledCatalogAssetDirectory = 'assets/catalog/';
 
@@ -134,6 +134,11 @@ class CatalogPackFood {
   /// The base dish this food is a size or oil variant of, or null for a dish.
   final String? variantOf;
 
+  /// A dish's main ingredients (pack 8 on, TF-2 C): 2-6 words from the
+  /// vocabulary in assets/catalog/key_ingredients.json, no amounts. Empty
+  /// for single foods, variants and earlier packs.
+  final List<String> keyIngredients;
+
   const CatalogPackFood({
     required this.id,
     required this.displayName,
@@ -146,6 +151,7 @@ class CatalogPackFood {
     this.aliases = const [],
     this.statesVariantOf = false,
     this.variantOf,
+    this.keyIngredients = const [],
   });
 
   CatalogPackServing get defaultServing =>
@@ -433,6 +439,13 @@ class CatalogPack {
           locale: _text(_map(entry, 'alias')['locale'], 'alias.locale'),
         ),
     ];
+    final keyIngredients = [
+      for (final entry in _list(
+        json['key_ingredients'] ?? const [],
+        'food.key_ingredients',
+      ))
+        _text(entry, 'food.key_ingredients'),
+    ];
     return CatalogPackFood(
       id: id,
       displayName: _text(json['display_name'], 'food.display_name'),
@@ -445,6 +458,7 @@ class CatalogPack {
       aliases: List.unmodifiable(aliases),
       statesVariantOf: json.containsKey('variant_of'),
       variantOf: variantOf as String?,
+      keyIngredients: List.unmodifiable(keyIngredients),
     );
   }
 }
